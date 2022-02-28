@@ -1,7 +1,7 @@
 #include "cmsis_os.h"
 #include "topic.h"
 
-#define number_of_bins 50 /* The number of xQueue bins to store data for */
+#define number_of_bins 20 /* The number of xQueue bins to store data for */
 #define msg_queue_len 5 /* The max number of messages an individual stream can hold */
 
 

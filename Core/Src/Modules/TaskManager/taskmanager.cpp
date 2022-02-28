@@ -23,7 +23,7 @@ static void run()
 	ROVER_PRINTLN("================");
 	for (int i = 0; i < NUMBER_OF_TASKS; i++) {
 		ROVER_PRINT(osThreadGetName(task_handles[i]));
-		ROVER_PRINTLN(" heap: %u/%u bytes in use", task_stack_size[i] - osThreadGetStackSpace(task_handles[0]), task_stack_size[i]);
+		ROVER_PRINTLN(" heap: %u/%u bytes in use", task_stack_size[i] - osThreadGetStackSpace(task_handles[i]), task_stack_size[i]);
 	}
 	ROVER_PRINTLN("");
 	#endif

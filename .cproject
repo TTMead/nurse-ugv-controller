@@ -105,10 +105,6 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Debug/Core/Src/Modules/Blinky"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Debug/Core/Src/Modules/Serial"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Debug/Core/Src/Modules/TaskManager"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Debug/Core/Src/Modules/eORB"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 					</sourceEntries>

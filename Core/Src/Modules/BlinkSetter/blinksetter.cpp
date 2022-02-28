@@ -1,10 +1,9 @@
 #include "blinksetter.hpp"
 #include "eORB.hpp"
 
-blink_t msg;
+static struct blink_t msg;
 
 static void run() {
-
 	msg.timestamp = 1;
 	msg.frequency = 50;
 	publish(TOPIC_BLINK, &msg);

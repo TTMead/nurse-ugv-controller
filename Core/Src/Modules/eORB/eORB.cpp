@@ -52,13 +52,15 @@ static int get_size_of_topic(int topic) {
 
 
 int subscribe(int topic) {
-    subscriberCount += 1;
-
     bin_topics[subscriberCount] = topic;
 
     bin_handles[subscriberCount] = osMessageQueueNew(msg_queue_len, get_size_of_topic(topic), NULL);
 
-    return subscriberCount;
+
+    subscriberCount += 1;
+
+
+    return subscriberCount-1;
 }
 
 

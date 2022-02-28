@@ -6,15 +6,13 @@
 #define TOPIC_HEARTBEAT 0
 #define TOPIC_BLINK 1
 
-class topic {
-public:
+
+struct heartbeat_t {
 	uint64_t timestamp;
 };
 
-class heartbeat_t : public topic {};
-
-class blink_t : public topic {
-public:
+struct blink_t {
+	uint64_t timestamp;
     uint32_t frequency;
 };
 
