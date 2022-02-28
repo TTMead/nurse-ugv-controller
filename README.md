@@ -23,6 +23,4 @@ To build this repository you will require the **STM32CubeIDE** to run the build 
 To simply develop the code without running build targets, any IDE should be fine.  
 
 I would recommend you develop your software on your personal microcontrollers before transferring them to this codebase.  
-When you want to test the code on the STM, you can add your code as a thread to the **Core/Src/Modules** directory.  
-
-- Timothy
+When you want to test the code on the STM, you can add your code as a thread to the **Core/Src/Modules** directory. 
