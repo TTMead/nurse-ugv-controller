@@ -1,0 +1,6 @@
+# User settings
+.settings
+
+# Build files
+Debug/
+*.launch
