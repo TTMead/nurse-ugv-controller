@@ -1,7 +1,0 @@
-eORB.cpp:11:6:void StarteORB(void*)	16	static
-eORB.cpp:24:13:void run()	8	static
-eORB.cpp:37:12:int get_size_of_topic(int)	24	static
-eORB.cpp:54:5:int subscribe(int)	24	static
-eORB.cpp:65:6:void publish(int, void*)	24	static
-eORB.cpp:80:5:int check(int)	16	static
-eORB.cpp:87:5:int copy(int, void*)	16	static

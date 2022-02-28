@@ -1,2 +1,0 @@
-taskmanager.cpp:16:13:void run()	24	static
-taskmanager.cpp:34:6:void StartTaskManager(void*)	16	static

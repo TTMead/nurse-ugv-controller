@@ -1,2 +1,0 @@
-blinky.cpp:6:13:void run()	8	static
-blinky.cpp:12:6:void StartBlinky(void*)	16	static
