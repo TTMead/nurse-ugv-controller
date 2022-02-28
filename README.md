@@ -6,7 +6,7 @@ This codebase was generated based on the **64-NUCLEO** board for the **STM32F411
 
 ## Codebase Architecture  
 <p align="center">  
-  <img src="https://www.freertos.org/fr-content-src/uploads/2018/07/logo-1.jpg"/>  
+  <img src="https://www.freertos.org/fr-content-src/uploads/2018/07/logo-1.jpg">  
 </p>  
 This codebase runs [CMSIS-RTOS V2](https://www.keil.com/pack/doc/CMSIS/RTOS2/html/group__CMSIS__RTOS.html) which is an abstraction layer of [FreeRTOS](https://www.freertos.org/a00106.html) (Free, Real Time Operating System). This is probably a different architecture to the Arduino Library that you may be used to.
 
