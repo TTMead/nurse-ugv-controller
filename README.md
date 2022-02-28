@@ -1,4 +1,4 @@
-# Nurse UGV  
+# Nurse UGV - Rover Controller
 Hello all,  
 This is a repository to store the embedded source files for the rover controller.  
 
