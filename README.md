@@ -1,10 +1,12 @@
 # Nurse UGV  
+![](https://media.istockphoto.com/vectors/stethoscope-heart-icon-vector-id1139549801?k=20&m=1139549801&s=612x612&w=0&h=QP1B2MryBMF2N-jR-NYEHZAvP0sXMZmV_2mg99jVBso=)
 Hello all,  
 This is a repository to store the embedded source files for the rover controller.  
 
 This codebase was generated based on the **64-NUCLEO** board for the **STM32F411RE** microcontroller.  
 
 ## Codebase Architecture  
+![](https://www.freertos.org/fr-content-src/uploads/2018/07/logo-1.jpg)
 This codebase runs [CMSIS-RTOS V2](https://www.keil.com/pack/doc/CMSIS/RTOS2/html/group__CMSIS__RTOS.html) which is an abstraction layer of [FreeRTOS](https://www.freertos.org/a00106.html) (Free, Real Time Operating System). This is probably a different architecture to the Arduino Library that you may be used to.
 
 When developing C code using an Arduino Libary a *Super Loop* architecture is used. This is where you have a *setup* function which runs at the start of the program and the titular *loop* function which runs constantly in a loop. This is different to developing in an RTOS where multiple threads are created and run concurrently by a scheduler that switches between tasks. For more information on this, I'd recommend the [DigiKey tutorial](https://www.digikey.com.au/en/videos/d/digi-key-electronics/introduction-to-rtos-part-1-what-is-a-real-time-operating-system-rtos) series.  
