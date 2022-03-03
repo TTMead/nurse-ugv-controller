@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "modules/modules.h"
+#include "Modules/modules.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
