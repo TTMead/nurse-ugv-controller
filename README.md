@@ -19,12 +19,19 @@ The **Core/Src** directory contains the C/C++ source code for the UGV. Some of t
 I would recommend you develop your software on your personal microcontrollers before transferring them to this codebase.  
 When you want to test the code on the STM, you can add your code in a folder under **Core/Src/Modules** and initialise the code as a thread in **taskmanager.cpp**. 
 
-## Build/Development Environment  
+## Development Environment  
 <p align="center">  
   <img src="https://www.disk91.com/wp-content/uploads/2020/06/stm32-cube-ide.png"/>  
 </p>  
   
-To build this repository you will require the [**STM32CubeIDE**](https://www.st.com/en/development-tools/stm32cubeide.html) to run the build target for the microcontroller.  
-To simply develop the code without running build targets, any IDE should be fine.  
+To build this repository you will require the [**STM32CubeIDE**](https://www.st.com/en/development-tools/stm32cubeide.html) to run the build target for the microcontroller, although to simply develop the code without running build targets, any IDE should be fine.  
 
+### Setup Instructions  
+1. Clone this repository into your STM32CubeIDE workspace.  
+2. Enter the import menu through *File->Import..->Projects from Folder or Archive*  
+3. Set the Import Source to the repo directory  
+4. Press *Finish*  
 
+### Build Instructions  
+1. *Project->Build Project* (Ensure that there are no Errors or Warnings during build)  
+2. *Run->Debug As->1 Stm32 Cortex-M C/C++ Application*  
