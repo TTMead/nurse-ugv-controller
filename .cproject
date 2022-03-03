@@ -65,11 +65,11 @@
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nucleo-f411re-rover/Core/Src/Modules/Blinky}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nucleo-f411re-rover/Core/Src/Modules/eORB}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nucleo-f411re-rover/Core/Src/Modules/Serial}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nucleo-f411re-rover/Core/Src/Modules/TaskManager}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/nucleo-f411re-rover/Core/Src/Modules/BlinkSetter}&quot;"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/eORB"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/Blinky"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/BlinkSetter"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/TaskManager"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/Serial"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.definedsymbols.515897265" name="Define symbols (-D)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.definedsymbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="DEBUG"/>
