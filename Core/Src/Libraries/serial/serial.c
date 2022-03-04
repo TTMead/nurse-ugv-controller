@@ -1,4 +1,4 @@
-#include "serial.hpp"
+#include "serial.h"
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -7,9 +7,8 @@
 #define MAX_STRING_LENGTH 150
 
 
-
+/* Buffer to store messages mid transfer */
 static char str[MAX_STRING_LENGTH];
-
 
 
 void ROVER_PRINT (const char *p_string, ...)
@@ -97,9 +96,9 @@ uint8_t NAV_read(uint8_t *message_buf, uint8_t *message_len) {
 	if (NAV_read_byte(&message_buf[0]) == 0) {
 		uint8_t counter = 1;
 
-		while(true) {
+		while(1) {
 			if (NAV_read_byte(&message_buf[counter]) == 0) {
-				counter ++;
+				counter += 1;
 			} else {
 				return 0;
 			}

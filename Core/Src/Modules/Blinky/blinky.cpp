@@ -1,7 +1,6 @@
 #include "blinky.hpp"
 #include "stm32f4xx_hal.h"
 #include "eORB.hpp"
-#include "serial.hpp"
 
 static int blink_sub;
 static blink_t blink_msg;

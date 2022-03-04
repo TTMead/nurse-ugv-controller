@@ -1,5 +1,5 @@
 
-#include "../modules.h" /* Some functions exported to API */
+#include "ugv_cmsis_interface.h" /* Some functions exported to API */
 #include "cmsis_os.h"
 
 #define DISPLAY_MEMORY_USAGE

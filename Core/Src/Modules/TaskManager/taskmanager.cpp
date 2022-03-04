@@ -3,7 +3,7 @@
 
 
 // Internal headers
-#include "serial.hpp"
+#include "serial.h"
 #include "blinky.hpp"
 #include "blinksetter.hpp"
 #include "taskmanager.hpp"

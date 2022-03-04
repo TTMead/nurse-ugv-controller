@@ -1,8 +1,31 @@
+/*********************************************************************
+ * serial.h
+ *
+ * This library serves as an interface between the stm32f411re
+ * UART HAL and the nurse UGV code base. This library will
+ * have to be updated for other HAL's if a separate microcontroller
+ * is used.
+ *********************************************************************/
 #include <stdint.h>
-#include "../modules.h"
+#include <stdarg.h>
+#include <stdio.h>
+#include "ugv_cmsis_interface.h"
 
+
+#define TX_TIMEOUT 100
+#define MAX_STRING_LENGTH 150
+
+
+/* Pointer to the debug UART handle */
 extern UART_HandleTypeDef *serial_uart_handle;
+
+/* Pointer to the navigator UART handle */
 extern UART_HandleTypeDef *navigator_uart_handle;
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /* ROVER PRINT
@@ -18,7 +41,7 @@ void ROVER_PRINT (const char *p_string, ...);
  * Formats a string with the given arguments across the serial UART line.
  * Sends a linebreak and carriage return afterwards.
  */
-void ROVER_PRINTLN (const char *p_string, ...);
+void ROVER_PRINTLN(const char *p_string, ...);
 
 
 /* NAV Send
@@ -33,7 +56,6 @@ void ROVER_PRINTLN (const char *p_string, ...);
  */
 uint8_t NAV_send(uint8_t *message_buf, uint8_t message_len);
 
-
 /* NAV Read
  *
  * Reads a serial message to the Navigator component (Raspberry pi)
@@ -46,3 +68,7 @@ uint8_t NAV_send(uint8_t *message_buf, uint8_t message_len);
  */
 uint8_t NAV_read(uint8_t *message_buf, uint8_t *message_len);
 
+
+#ifdef __cplusplus
+}
+#endif

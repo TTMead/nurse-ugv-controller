@@ -1,5 +1,5 @@
 #include "eORB.hpp"
-#include "serial.hpp"
+#include "serial.h"
 
 static int subscriberCount; /* This variable keeps track of the most recent subscriber ID (also an indicator of the current number of subscribers) */
 
