@@ -17,6 +17,7 @@ extern "C" {
 
 // Functions that need to be exported to the main code
 extern UART_HandleTypeDef *serial_uart_handle;
+extern UART_HandleTypeDef *navigator_uart_handle;
 extern osThreadId_t task_handles[NUMBER_OF_TASKS];
 extern void StartTaskManager(void *argument);
 

@@ -72,3 +72,43 @@ void ROVER_PRINTLN(const char *p_string, ...)
 
 	return;
 }
+
+
+uint8_t NAV_send(uint8_t *message_buf, uint8_t message_len) {
+	return HAL_UART_Transmit(navigator_uart_handle, message_buf, message_len, TX_TIMEOUT);
+}
+
+
+
+/* Reads a byte
+ *
+ * @returns 0 if byte was found
+ * 			1 if byte was not found
+ */
+uint8_t NAV_read_byte(uint8_t *byte_buf) {
+	uint8_t success = HAL_UART_Receive(navigator_uart_handle, byte_buf, 1, 0);
+
+	return (success == HAL_TIMEOUT || success == HAL_ERROR || success == HAL_BUSY);
+}
+
+
+
+uint8_t NAV_read(uint8_t *message_buf, uint8_t *message_len) {
+	if (NAV_read_byte(&message_buf[0]) == 0) {
+		uint8_t counter = 1;
+
+		while(true) {
+			if (NAV_read_byte(&message_buf[counter]) == 0) {
+				counter ++;
+			} else {
+				return 0;
+			}
+		}
+	}
+
+	return 1;
+}
+
+
+
+

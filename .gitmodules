@@ -1,0 +1,3 @@
+[submodule "Core/Src/Libraries/nurse-comms"]
+	path = Core/Src/Libraries/nurse-comms
+	url = git@github.com:TTMead/nurse-comms.git
