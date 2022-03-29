@@ -1,10 +1,19 @@
 #include "serial.h"
+#include "cmsis_os.h"
 #include <stdarg.h>
 #include <stdio.h>
 
 
 #define TX_TIMEOUT 100
 #define MAX_STRING_LENGTH 150
+
+#define MAX_BYTES_IN_RECEIVE_BUFFER 50
+
+uint8_t* wifi_buff_pointer;
+uint32_t wifi_counter;
+
+uint8_t* nav_buff_pointer;
+uint32_t nav_counter;
 
 
 /* Buffer to store messages mid transfer */
@@ -73,41 +82,95 @@ void ROVER_PRINTLN(const char *p_string, ...)
 }
 
 
-uint8_t NAV_send(uint8_t *message_buf, uint8_t message_len) {
-	return HAL_UART_Transmit(navigator_uart_handle, message_buf, message_len, TX_TIMEOUT);
-}
-
-
-
-/* Reads a byte
+/* HAL_UART_RxCpltCallback
  *
- * @returns 0 if byte was found
- * 			1 if byte was not found
+ * This interrupt is called by the HAL middleware whenever a uart message is received on a non-blocking comms port (i.e. wifi or nav)
  */
-uint8_t NAV_read_byte(uint8_t *byte_buf) {
-	uint8_t success = HAL_UART_Receive(navigator_uart_handle, byte_buf, 1, 0);
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	// Pointers to variables that depend on which uart is being called
+	uint32_t* counter_ptr;
+	UART_HandleTypeDef* uart_handle;
+	uint8_t* serial_buff;
 
-	return (success == HAL_TIMEOUT || success == HAL_ERROR || success == HAL_BUSY);
+	// Set the pointer variables for wifi or nav
+	if (huart == wifi_module_uart_handle) {
+		counter_ptr = &wifi_counter;
+		uart_handle = wifi_module_uart_handle;
+		serial_buff = wifi_buff_pointer;
+	} else if (huart == wifi_module_uart_handle) {
+		counter_ptr = &nav_counter;
+		uart_handle = navigator_uart_handle;
+		serial_buff = nav_buff_pointer;
+	}
+
+	// If we have the room, increment the counter. Else, ignore the incomming byte
+	if (*counter_ptr < MAX_BYTES_IN_RECEIVE_BUFFER) {
+		*counter_ptr = *counter_ptr + 1;
+	}
+
+	// Reset poll interrupt for this uart
+	HAL_UART_Receive_IT(uart_handle, &serial_buff[*counter_ptr], 1);
 }
 
 
 
-uint8_t NAV_read(uint8_t *message_buf, uint8_t *message_len) {
-	if (NAV_read_byte(&message_buf[0]) == 0) {
-		uint8_t counter = 1;
 
-		while(1) {
-			if (NAV_read_byte(&message_buf[counter]) == 0) {
-				counter += 1;
-			} else {
-				return 0;
-			}
-		}
+
+void init_wifi_comm(uint8_t* message_buf) {
+	// Save the message buffer for wifi
+	wifi_buff_pointer = message_buf;
+	wifi_counter = 0;
+
+	// Start polling for wifi serial data
+	HAL_UART_Receive_IT (wifi_module_uart_handle, &wifi_buff_pointer[wifi_counter], 1);
+}
+
+void init_nav_comm(uint8_t* message_buf) {
+	// Save the message buffer for navigation
+	nav_buff_pointer = message_buf;
+	nav_counter = 0;
+
+	// Start polling for navigator serial data
+	HAL_UART_Receive_IT (navigator_uart_handle, &nav_buff_pointer[nav_counter], 1);
+}
+
+
+
+uint8_t WiFi_read(uint8_t *message_len) {
+	// Return negative if no characters available
+	if (wifi_counter == 0){
+		return 0;
 	}
+
+	// Return the length of the message as the counter size
+	*message_len = wifi_counter;
+
+	// Reset the counter as the messages have been read
+	wifi_counter = 0;
 
 	return 1;
 }
 
 
+uint8_t Nav_read(uint8_t *message_len) {
+	// Return negative if no characters available
+	if (nav_counter == 0){
+		return 0;
+	}
+
+	// Return the length of the message as the counter size
+	*message_len = nav_counter;
+
+	// Reset the counter as the messages have been read
+	nav_counter = 0;
+
+	return 1;
+}
+
+
+uint8_t NAV_send(uint8_t *message_buf, uint8_t message_len) {
+	return HAL_UART_Transmit(navigator_uart_handle, message_buf, message_len, TX_TIMEOUT);
+}
 
 

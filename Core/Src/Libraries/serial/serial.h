@@ -22,6 +22,8 @@ extern UART_HandleTypeDef *serial_uart_handle;
 /* Pointer to the navigator UART handle */
 extern UART_HandleTypeDef *navigator_uart_handle;
 
+/* Pointer to the navigator UART handle */
+extern UART_HandleTypeDef *wifi_module_uart_handle;
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,17 +58,45 @@ void ROVER_PRINTLN(const char *p_string, ...);
  */
 uint8_t NAV_send(uint8_t *message_buf, uint8_t message_len);
 
+
 /* NAV Read
  *
  * Reads a serial message to the Navigator component (Raspberry pi)
  *
- * @param message_buf - pointer to the buffer to store the message
- * @param message_len - length of the message in bytes
- *
- * @returns 0 if a message was found
- * 			1 if unsuccessful or no message found
+ * @param message_len - pointer to store the length of the message in bytes
+ * @returns 1 if a message was found
+ * 			0 if unsuccessful or no message found
  */
-uint8_t NAV_read(uint8_t *message_buf, uint8_t *message_len);
+uint8_t NAV_read(uint8_t *message_len);
+
+
+/* Initialise Navigator Communication
+ *
+ * Begins interrupt polling for data on the Navigator UART channel.
+ *
+ * @param message_buf - the message buffer used to contain any data received.
+ */
+void init_nav_comm(uint8_t* message_buf);
+
+
+/* WiFi Read
+ *
+ * Reads a serial message from the WiFi Module
+ *
+ * @param message_len - pointer to store the length of the message in bytes
+ * @returns 1 if a message was found
+ * 			0 if unsuccessful or no message found
+ */
+uint8_t WiFi_read(uint8_t *message_len);
+
+
+/* Initialise Wifi Communication
+ *
+ * Begins interrupt polling for data on the WiFi UART channel.
+ *
+ * @param message_buf - the message buffer used to contain any data received.
+ */
+void init_wifi_comm(uint8_t* message_buf);
 
 
 #ifdef __cplusplus

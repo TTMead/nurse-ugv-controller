@@ -8,6 +8,7 @@
 #include "blinksetter.hpp"
 #include "taskmanager.hpp"
 #include "eORB.hpp"
+#include "communication.hpp"
 
 
 osThreadId_t task_handles[NUMBER_OF_TASKS];
@@ -50,6 +51,7 @@ void StartTaskManager(void *argument)
 	InitialiseTask(StarteORB, &eORB_attributes);
 	InitialiseTask(StartBlinkSetter, &BlinkSetter_attributes);
 	InitialiseTask(StartBlinky, &Blinky_attributes);
+	InitialiseTask(StartCommunication, &Communication_attributes);
 
 	for (;;)
 	{
