@@ -1,3 +1,12 @@
+/******** nurse controller **********
+ *
+ * @file communication.hpp
+ * @desc Receives UART information from the ESP WiFi module and handles it appropriately.
+ *
+ * @author Timothy Mead
+ *
+ ************************************/
+
 #include "cmsis_os.h"
 
 const osThreadAttr_t Communication_attributes = {

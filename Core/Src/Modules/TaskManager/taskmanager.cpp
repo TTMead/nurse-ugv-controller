@@ -1,6 +1,15 @@
+/******** nurse controller **********
+ *
+ * @file taskmanager.hpp
+ * @desc This module manages the memory and initialisation of the RTOS tasks
+ *
+ * @author Timothy Mead
+ *
+ ************************************/
+
+
 // External libraries
 #include "stdlib.h"
-
 
 // Internal headers
 #include "serial.h"

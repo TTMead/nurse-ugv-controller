@@ -1,3 +1,13 @@
+/******** nurse controller **********
+ *
+ * @file blinky.hpp
+ * @desc Handles the blinking of the status LED
+ *
+ * @author Timothy Mead
+ *
+ ************************************/
+
+
 #include "cmsis_os.h"
 
 const osThreadAttr_t Blinky_attributes = {

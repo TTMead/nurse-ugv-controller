@@ -1,3 +1,13 @@
+/******** nurse controller **********
+ *
+ * @file eORB.hpp
+ * @desc embedded Object Request Broker. Facilitates pub/sub communication between modules.
+ *
+ *
+ * @author Timothy Mead
+ *
+ ************************************/
+
 #include "cmsis_os.h"
 #include "topic.h"
 

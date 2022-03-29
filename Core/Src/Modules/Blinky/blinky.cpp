@@ -1,3 +1,13 @@
+/******** nurse controller **********
+ *
+ * @file blinky.cpp
+ * @desc Handles the blinking of the status LED
+ *
+ * @author Timothy Mead
+ *
+ ************************************/
+
+
 #include "blinky.hpp"
 #include "stm32f4xx_hal.h"
 #include "eORB.hpp"

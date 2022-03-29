@@ -1,12 +1,26 @@
+/******** nurse controller **********
+ *
+ * @file eORB.cpp
+ * @desc embedded Object Request Broker. Facilitates pub/sub communication between modules.
+ *
+ *
+ * @author Timothy Mead
+ *
+ ************************************/
+
+
 #include "eORB.hpp"
 #include "serial.h"
 
+
+
 static int subscriberCount; /* This variable keeps track of the most recent subscriber ID (also an indicator of the current number of subscribers) */
-
-
 /* Bins to store each fifo data stream */
 static osMessageQId bin_handles[number_of_bins];
 static int bin_topics[number_of_bins];
+
+
+
 
 void StarteORB(void* ignore)
 {

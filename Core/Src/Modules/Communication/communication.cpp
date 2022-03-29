@@ -1,3 +1,13 @@
+/******** nurse controller **********
+ *
+ * @file communication.cpp
+ * @desc Receives UART information from the ESP WiFi module and handles it appropriately.
+ *
+ * @author Timothy Mead
+ *
+ ************************************/
+
+
 #include "serial.h"
 #include "stm32f4xx_hal.h"
 #include "communication.hpp"
