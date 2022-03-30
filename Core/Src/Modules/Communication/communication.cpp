@@ -15,15 +15,24 @@
 static uint8_t message_buf[32];
 static uint8_t message_len;
 
+static uint8_t command_buf[32];
+static uint8_t command_counter;
+
 static void run() {
 	// If atleast one byte of data was received from the wifi module
 	if (WiFi_read(&message_len)) {
 
-		// Print the data to serial
+		// For each byte of data received
 		for (int i = 0; i < message_len; i++) {
-			ROVER_PRINT("%c", message_buf[i]);
-		}
+			// If the byte is an eol
+			if (message_buf[i]) {
+				// The command is completed. Now handle the command
+				handle_command();
+			}
 
+			// Transfer the byte of data to the command buffer
+			command_buf[command_counter] = message_buf[i];
+		}
 
 	}
 
@@ -31,11 +40,19 @@ static void run() {
 	osDelay(500);
 }
 
+void handle_command() {
+
+	command_counter = 0;
+}
+
 
 
 void StartCommunication(void *argument) {
 	// Initialise comms with WiFi module
 	init_wifi_comm(message_buf);
+
+	// Initialise the command
+	command_counter = 0;
 
 	for (;;)
 	{
