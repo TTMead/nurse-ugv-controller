@@ -80,3 +80,6 @@ int check(int subscriberID);
 
 
 int copy(int subscriberID, void* data);
+
+
+int eORB_main(int argc, const char *argv[]);

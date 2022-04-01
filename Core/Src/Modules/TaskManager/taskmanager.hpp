@@ -17,3 +17,5 @@
 extern osThreadId_t task_handles[NUMBER_OF_TASKS];
 void StartTaskManager(void *argument);
 
+/* Sends a command to the task manager console */
+int console_command(int argc, const char *argv[]);

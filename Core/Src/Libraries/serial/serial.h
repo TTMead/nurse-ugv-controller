@@ -99,6 +99,26 @@ uint8_t WiFi_read(uint8_t *message_len);
 void init_wifi_comm(uint8_t* message_buf);
 
 
+/* Serial Read
+ *
+ * Reads a serial message from the serial debug port
+ *
+ * @param message_len - pointer to store the length of the message in bytes
+ * @returns 1 if a message was found
+ * 			0 if unsuccessful or no message found
+ */
+uint8_t Serial_read(uint8_t *message_len);
+
+
+/* Initialise Serial Communication
+ *
+ * Begins interrupt polling for data on the Serial debug UART channel.
+ *
+ * @param message_buf - the message buffer used to contain any data received.
+ */
+void init_serial_comm(uint8_t* message_buf);
+
+
 #ifdef __cplusplus
 }
 #endif

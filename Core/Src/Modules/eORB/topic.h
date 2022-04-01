@@ -3,6 +3,8 @@
 #ifndef eORB_topics
 #define eORB_topics
 
+#define NUM_TOPICS 2
+
 #define TOPIC_HEARTBEAT 0
 #define TOPIC_BLINK 1
 
