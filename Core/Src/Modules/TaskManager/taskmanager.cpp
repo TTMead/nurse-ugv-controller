@@ -82,37 +82,60 @@ void StartTaskManager(void *argument)
 
 
 
+void print_commands() {
+	ROVER_PRINTLN("available applications:");
+	ROVER_PRINTLN("    - taskmanager");
+	ROVER_PRINTLN("    - eORB");
+	ROVER_PRINTLN("    - communicator");
+}
 
 
 int console_command(int argc, const char *argv[]) {
+	// Command indicator
+	ROVER_PRINT(">");
+
 	// Check if the command has any arguments
 	if (argc < 1) {
-		ROVER_PRINTLN("[Task Manager] No command provided");
+		ROVER_PRINTLN("");
+		ROVER_PRINT("[Task Manager] No application provided, ");
+		print_commands();
 		return 1;
 	}
 
 	//	Print the received command
-	ROVER_PRINT(">");
 	for (int i = 0; i < argc; i++) {
-		ROVER_PRINT("%s", argv[0]);
+		ROVER_PRINT("%s ", argv[i]);
 	}
 	ROVER_PRINTLN("");
 
 
-	// Handle the command
-	if (!strcmp(argv[0], "memory")) {
-		// Toggle memory display
-		display_memory_usage = !display_memory_usage;
-		ROVER_PRINTLN("[Task Manager] Memory display toggled!");
-		return 0;
+	// Handle the application
+	if (!strcmp(argv[0], "taskmanager")) {
+		// Check for number of arguments
+		if (argc < 2) {
+			ROVER_PRINTLN("[Task Manager] Please provide an command: memory");
+			return 1;
+		}
+
+		// Task manager memory command
+		if (!strcmp(argv[1], "memory")) {
+			// Toggle memory display
+			display_memory_usage = !display_memory_usage;
+			ROVER_PRINTLN("[Task Manager] Memory display toggled!");
+			return 0;
+		}
 
 	} else if (!strcmp(argv[0], "eORB")) {
 		eORB_main(argc, argv);
 		return 0;
+	} else if (!strcmp(argv[0], "communicator")) {
+		communication_main(argc, argv);
+		return 0;
 	}
 
 	// Command wasn't recognised
-	ROVER_PRINTLN("[Task Manager] Unrecognised command");
+	ROVER_PRINT("[Task Manager] Unrecognised app, ");
+	print_commands();
 	return 2;
 }
 

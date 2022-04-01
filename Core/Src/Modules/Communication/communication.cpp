@@ -9,6 +9,7 @@
 
 
 #include "serial.h"
+#include "msg_heartbeat.h"
 #include "stm32f4xx_hal.h"
 #include "communication.hpp"
 #include "taskmanager.hpp"
@@ -16,6 +17,9 @@
 #include <string>
 
 #define MAX_BUF_LEN 32
+
+// Debug parameters
+bool debug_wifi;
 
 /* Memory buffer for wifi bytes in transit */
 static uint8_t wifi_message_buff[MAX_BUF_LEN];
@@ -26,7 +30,7 @@ static uint8_t serial_message_buff[MAX_BUF_LEN];
 static uint8_t serial_message_len;
 
 /* Memory buffer for storing wifi commands in transit */
-static char wifi_command_buff[MAX_BUF_LEN];
+static uint8_t wifi_command_buff[MAX_BUF_LEN];
 static uint8_t wifi_command_counter;
 
 /* Memory buffer for storing serial commands in transit */
@@ -56,14 +60,43 @@ int get_number_of_arguments(char* str, int strlen)
 
 
 void handle_wifi_command() {
+
+	// Initialise command read buff
 	std::string cmd = "";
 
+	// Copy command into new buff
 	for (int i = 0; i < wifi_command_counter; i++) {
-		cmd += wifi_command_buff[wifi_command_counter];
+		// Skip newline characters
+		if (wifi_command_buff[i] == 10) {
+			continue;
+		}
+
+		// Add this char into buff
+		cmd += wifi_command_buff[i];
 	}
 
-	ROVER_PRINTLN("[WiFi] %s", cmd.c_str());
+	// Unpack the message
+	uint8_t id;
+	uint8_t payload_length;
+	uint8_t payload[6];
 
+	// If the message fails the unpacking
+	if (!unpack_message(&id, &payload_length, payload, (uint8_t*) cmd.c_str()) == 0) {
+		// Print warning if wifi debug is on
+		if (debug_wifi) { ROVER_PRINTLN("[WiFi] A message failed checksum!"); }
+	} else {
+
+		// Handle the command
+		if (id == MSG_ID_HEARTBEAT) {
+			if (debug_wifi) { ROVER_PRINTLN("[WiFi] Heartbeat from Component %d received!", payload[0]); };
+		} else {
+			if (debug_wifi) { ROVER_PRINTLN("[WiFi] Unknown message ID, %d.", id); };
+		}
+
+	}
+
+
+	// Reset the wifi command buff
 	wifi_command_counter = 0;
 }
 
@@ -138,14 +171,14 @@ static void run() {
 
 		// For each byte of data received
 		for (int i = 0; i < wifi_message_len; i++) {
-			// If the byte is an eol
-			if (wifi_message_buff[i] == '\n') {
+			// If the byte is a NULL byte
+			if (wifi_message_buff[i] == (uint8_t) '\n') {
 				// The command is completed. Now handle the command
 				handle_wifi_command();
 			}
 
 			// Transfer the byte of data to the command buffer
-			wifi_command_buff[wifi_command_counter] = (char) wifi_message_buff[i];
+			wifi_command_buff[wifi_command_counter] = wifi_message_buff[i];
 
 			// Increment the wifi command counter
 			wifi_command_counter ++;
@@ -182,6 +215,9 @@ static void run() {
 
 
 void StartCommunication(void *argument) {
+	// Initialise settings
+	debug_wifi = false;
+
 	// Initialise comms
 	init_wifi_comm(wifi_message_buff);
 	init_serial_comm(serial_message_buff);
@@ -197,3 +233,52 @@ void StartCommunication(void *argument) {
 
 	osThreadTerminate(NULL);
 }
+
+void print_options() {
+	ROVER_PRINTLN("options are:");
+	ROVER_PRINTLN("    - debugwifi");
+}
+
+
+int communication_main(int argc, const char *argv[]) {
+	// Check if the command has enough arguments
+	if (argc < 1) {
+		ROVER_PRINT("[Communicator] Please enter a command, ");
+		print_options();
+		return 1;
+	}
+
+	// Handle the command
+	if (!strcmp(argv[1], "debugwifi")) {
+
+		if (argc < 3) {
+			ROVER_PRINTLN("[Communicator] Please enter 'on' or 'off'");
+			return 1;
+		}
+
+		if (!strcmp(argv[2], "on")) {
+			debug_wifi = true;
+			ROVER_PRINTLN("[Communicator] WiFi debug on!");
+			return 0;
+		} else if (!strcmp(argv[2], "off")) {
+			debug_wifi = false;
+			ROVER_PRINTLN("[Communicator] WiFi debug off!");
+			return 0;
+		} else {
+			ROVER_PRINTLN("[Communicator] Please specify 'on' or 'off'");
+			return 1;
+		}
+
+
+
+	}
+
+
+	// Command wasn't recognised
+	ROVER_PRINT("[Communicator] Unrecognised command, ");
+	print_options();
+	return 2;
+}
+
+
+

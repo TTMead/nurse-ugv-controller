@@ -18,3 +18,6 @@ const osThreadAttr_t Communication_attributes = {
 void StartCommunication(void *argument);
 
 void init_wifi_comm();
+
+// Console interface
+int communication_main(int argc, const char *argv[]);

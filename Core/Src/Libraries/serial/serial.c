@@ -99,24 +99,22 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	uint8_t* memory_buf;
 	bool* read;
 
-	read = &serial_read;
-
 	// Set the appropriate pointers
 	if (huart == serial_uart_handle) {
 		counter_ptr = &serial_counter;
 		uart_handle = serial_uart_handle;
 		memory_buf = serial_buff_pointer;
-
+		read = &serial_read;
 	} else if (huart == wifi_module_uart_handle) {
 		counter_ptr = &wifi_counter;
 		uart_handle = wifi_module_uart_handle;
 		memory_buf = wifi_buff_pointer;
-		//ready = wifi_ready;
+		read = &wifi_read;
 	} else if (huart == navigator_uart_handle) {
 		counter_ptr = &nav_counter;
 		uart_handle = navigator_uart_handle;
 		memory_buf = nav_buff_pointer;
-		//ready = nav_ready;
+		read = &nav_read;
 	}
 
 
