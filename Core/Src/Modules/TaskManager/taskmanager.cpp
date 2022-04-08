@@ -19,6 +19,7 @@
 #include "taskmanager.hpp"
 #include "eORB.hpp"
 #include "communication.hpp"
+#include "commander.hpp"
 
 
 
@@ -71,6 +72,7 @@ void StartTaskManager(void *argument)
 	InitialiseTask(StartCommunication, &Communication_attributes);
 	InitialiseTask(StartBlinkSetter, &BlinkSetter_attributes);
 	InitialiseTask(StartBlinky, &Blinky_attributes);
+	InitialiseTask(StartCommander, &Commander_attributes);
 
 	for (;;)
 	{
@@ -87,6 +89,7 @@ void print_commands() {
 	ROVER_PRINTLN("    - taskmanager");
 	ROVER_PRINTLN("    - eORB");
 	ROVER_PRINTLN("    - communicator");
+	ROVER_PRINTLN("    - commander");
 }
 
 
@@ -130,6 +133,9 @@ int console_command(int argc, const char *argv[]) {
 		return 0;
 	} else if (!strcmp(argv[0], "communicator")) {
 		communication_main(argc, argv);
+		return 0;
+	} else if (!strcmp(argv[0], "commander")) {
+		commander_main(argc, argv);
 		return 0;
 	}
 

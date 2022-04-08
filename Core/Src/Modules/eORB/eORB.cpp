@@ -123,7 +123,7 @@ int copy(int subscriberID, void* data) {
 
 int eORB_main(int argc, const char *argv[]) {
 	if (argc < 1) {
-		ROVER_PRINTLN("Invalid command");
+		ROVER_PRINTLN("[eORB] Please provide a command: listen");
 		return 1;
 	}
 

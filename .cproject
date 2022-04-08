@@ -76,11 +76,13 @@
 									<listOptionValue builtIn="false" value="../Core/Inc"/>
 									<listOptionValue builtIn="false" value="../Core/Src"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Libraries/nurse-comms"/>
-									<listOptionValue builtIn="false" value="../Core/Src/Modules/TaskManager"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Libraries/serial"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/TaskManager"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/eORB"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/Commander"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/Blinky"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/BlinkSetter"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/Drive"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/Communication"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
