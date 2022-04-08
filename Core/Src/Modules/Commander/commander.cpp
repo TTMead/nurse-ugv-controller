@@ -44,6 +44,7 @@ enum STATE {
 	SERVING
 } state;
 
+const char *state_names[] = {"Disarmed","Idle","Driving","Serving"};
 
 waypoint current_waypoint;
 waypoint waypoint_queue[MAX_NUMBER_WAYPOINTS];
@@ -154,10 +155,20 @@ void StartCommander(void *argument) {
 
 int commander_main(int argc, const char *argv[]) {
 	// Check if the command has enough arguments
-	if (argc < 1) {
-		ROVER_PRINT("[Commander] Module has no commands");
+	if (argc < 2) {
+		ROVER_PRINTLN("[Commander] Please enter a command: printstate");
 		return 1;
 	}
 
-	return 0;
+
+	// Handle the command
+	if (!strcmp(argv[1], "printstate")) {
+		ROVER_PRINTLN("[Commander] Commander State: %s", state_names[(int)state]);
+		return 0;
+	}
+
+
+	// Command wasn't recognised
+	ROVER_PRINTLN("[Commander] Unrecognised command");
+	return 2;
 }

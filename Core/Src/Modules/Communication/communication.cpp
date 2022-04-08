@@ -242,7 +242,7 @@ void print_options() {
 
 int communication_main(int argc, const char *argv[]) {
 	// Check if the command has enough arguments
-	if (argc < 1) {
+	if (argc < 2) {
 		ROVER_PRINT("[Communicator] Please enter a command, ");
 		print_options();
 		return 1;

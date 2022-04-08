@@ -59,7 +59,7 @@ static void InitialiseTask(osThreadFunc_t start_function, const osThreadAttr_t *
 
 void StartTaskManager(void *argument)
 {
-	ROVER_PRINTLN("STARTING TASK MANAGER");
+	ROVER_PRINTLN("[Task Manager] Rover booting up.");
 
 	// Add the task manager stack size
 	task_stack_size[0] = TASK_MANAGER_STACK_SIZE;
