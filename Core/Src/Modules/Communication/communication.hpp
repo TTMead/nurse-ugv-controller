@@ -12,7 +12,7 @@
 const osThreadAttr_t Communication_attributes = {
   .name = "Communication",
   .stack_size = 256*48,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityHigh4,
 };
 
 void StartCommunication(void *argument);

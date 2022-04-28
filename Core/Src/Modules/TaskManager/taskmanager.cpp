@@ -91,6 +91,7 @@ void print_commands() {
 	ROVER_PRINTLN("    - eORB");
 	ROVER_PRINTLN("    - communicator");
 	ROVER_PRINTLN("    - commander");
+	ROVER_PRINTLN("    - irreader");
 }
 
 
@@ -137,6 +138,9 @@ int console_command(int argc, const char *argv[]) {
 		return 0;
 	} else if (!strcmp(argv[0], "commander")) {
 		commander_main(argc, argv);
+		return 0;
+	} else if (!strcmp(argv[0], "irreader")) {
+		irreader_main(argc, argv);
 		return 0;
 	}
 
