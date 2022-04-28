@@ -10,7 +10,7 @@
 #define TOPIC_WAYPOINT 2
 #define TOPIC_SYS_COMMAND 3
 #define TOPIC_DRIVE_COMMAND 4
-
+#define TOPIC_SENSORS 5
 
 struct heartbeat_t {
 	uint64_t timestamp;
@@ -63,6 +63,19 @@ struct drive_command_t {
 	waypoint end_waypoint;
 };
 
+
+
+struct sensor_values_t {
+	uint64_t timestamp;
+	uint16_t s0;
+	uint16_t s1;
+	uint16_t s2;
+	uint16_t s3;
+	uint16_t s4;
+	uint16_t s5;
+	uint16_t s6;
+	uint16_t s7;
+};
 
 
 

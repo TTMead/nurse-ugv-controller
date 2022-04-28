@@ -24,17 +24,19 @@
  ************************************/
 
 #include "irreader.hpp"
+#include "eORB.hpp"
 
 static bool print;
 
 // Sensor ADC variables
-volatile uint16_t ADC_VAL[8];
+volatile uint16_t ADC_values[8];
 const int ADC_CHANNELS = 8;
 volatile int ADC_READY = 0; // set by callback
 
+sensor_values_t sensor_data;
 
 static void run() {
-	HAL_ADC_Start_DMA(sensor_adc_handle, (uint32_t*)ADC_VAL, 8);
+	HAL_ADC_Start_DMA(sensor_adc_handle, (uint32_t*)ADC_values, 8);
 
 	// While data is being sent by the dma
 	while (ADC_READY == 0) {
@@ -44,16 +46,25 @@ static void run() {
 	ADC_READY = 0;
 
 
-	// Data has been filled
+	// Data has been filled, publish
+	sensor_data.s0 = ADC_values[0];
+	sensor_data.s1 = ADC_values[1];
+	sensor_data.s2 = ADC_values[2];
+	sensor_data.s3 = ADC_values[3];
+	sensor_data.s4 = ADC_values[4];
+	sensor_data.s5 = ADC_values[5];
+	sensor_data.s6 = ADC_values[6];
+	sensor_data.s7 = ADC_values[7];
 
+	publish(TOPIC_SENSORS, &sensor_data);
 
 	// Print the real-time sensor values to serial
 	if (print) {
-		ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_VAL[0], ADC_VAL[1], ADC_VAL[2], ADC_VAL[3], ADC_VAL[4], ADC_VAL[5], ADC_VAL[6], ADC_VAL[7]);
+		ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
 	}
 
-	// Run time cyclic, record data 10 Hz
-	HAL_Delay(100);
+	// Run time cyclic, record data 50 Hz
+	HAL_Delay(20);
 }
 
 
@@ -85,25 +96,8 @@ int irreader_main(int argc, const char *argv[]) {
 	}
 
 	if (!strcmp(argv[1], "print")) {
-		if (argc < 3) {
-			ROVER_PRINTLN("[irreader] Please state \"on\" or \"off\".");
-			return 1;
-		}
-
-		if (!strcmp(argv[2],"off")) {
-			print = false;
-			ROVER_PRINTLN("[irreader] Printing off.");
-			return 0;
-		}
-
-		if (!strcmp(argv[2],"on")) {
-			print = true;
-			ROVER_PRINTLN("[irreader] Printing on.");
-			return 0;
-		}
-
-		ROVER_PRINTLN("[irreader] Please state \"on\" or \"off\".");
-		return 1;
+		print = true;
+		return 0;
 	}
 
 	ROVER_PRINTLN("[irreader] Unknown command");
