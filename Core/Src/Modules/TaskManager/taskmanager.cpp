@@ -20,7 +20,7 @@
 #include "eORB.hpp"
 #include "communication.hpp"
 #include "commander.hpp"
-
+#include "irreader.hpp"
 
 
 
@@ -73,6 +73,7 @@ void StartTaskManager(void *argument)
 	InitialiseTask(StartBlinkSetter, &BlinkSetter_attributes);
 	InitialiseTask(StartBlinky, &Blinky_attributes);
 	InitialiseTask(StartCommander, &Commander_attributes);
+	InitialiseTask(StartIRReader, &IRReader_attributes);
 
 	for (;;)
 	{

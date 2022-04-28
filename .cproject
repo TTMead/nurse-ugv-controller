@@ -83,6 +83,7 @@
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/Blinky"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/BlinkSetter"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/Drive"/>
+									<listOptionValue builtIn="false" value="../Core/Src/Modules/IRReader"/>
 									<listOptionValue builtIn="false" value="../Core/Src/Modules/Communication"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
