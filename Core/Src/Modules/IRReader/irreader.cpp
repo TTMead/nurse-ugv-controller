@@ -47,20 +47,20 @@ static void run() {
 
 
 	// Data has been filled, publish
-	sensor_data.s0 = ADC_values[0];
-	sensor_data.s1 = ADC_values[1];
-	sensor_data.s2 = ADC_values[2];
-	sensor_data.s3 = ADC_values[3];
-	sensor_data.s4 = ADC_values[4];
-	sensor_data.s5 = ADC_values[5];
-	sensor_data.s6 = ADC_values[6];
-	sensor_data.s7 = ADC_values[7];
+	sensor_data.s0 = (uint16_t) ADC_values[0];
+	sensor_data.s1 = (uint16_t) ADC_values[1];
+	sensor_data.s2 = (uint16_t) ADC_values[2];
+	sensor_data.s3 = (uint16_t) ADC_values[3];
+	sensor_data.s4 = (uint16_t) ADC_values[4];
+	sensor_data.s5 = (uint16_t) ADC_values[5];
+	sensor_data.s6 = (uint16_t) ADC_values[6];
+	sensor_data.s7 = (uint16_t) ADC_values[7];
 
 	publish(TOPIC_SENSORS, &sensor_data);
 
 	// Print the real-time sensor values to serial
 	if (print) {
-		ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
+		//ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
 	}
 
 	// Run time cyclic, record data 50 Hz

@@ -41,7 +41,20 @@ static int get_size_of_topic(int topic) {
         case TOPIC_BLINK:
             size = sizeof(blink_t);
             break;
+        case TOPIC_WAYPOINT:
+			size = sizeof(waypoint_t);
+			break;
+        case TOPIC_SYS_COMMAND:
+			size = sizeof(system_command_t);
+			break;
+        case TOPIC_DRIVE_COMMAND:
+			size = sizeof(drive_command_t);
+			break;
+        case TOPIC_SENSORS:
+			size = sizeof(sensor_values_t);
+			break;
     }
+
 
 
     return size;
