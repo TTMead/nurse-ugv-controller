@@ -11,6 +11,7 @@
 #include "driver.hpp"
 #include "stm32f4xx_hal.h"
 #include "eORB.hpp"
+#include "serial.h"
 
 
 // Cyclic executive
@@ -18,7 +19,7 @@ static void run() {
 	// ToDo
 
 	// HELLO
-	ROVER_PRINTLN("Hello World!")
+	ROVER_PRINTLN("Hello World!");
 
 	// Controls the frequency of the cyclic executive
 	HAL_Delay(15);

@@ -11,7 +11,7 @@
 
 const osThreadAttr_t Driver_attributes = {
   .name = "Drive Control",
-  .stack_size = 256,
+  .stack_size = 256*8,
   .priority = (osPriority_t) osPriorityHigh,
 };
 
