@@ -21,6 +21,7 @@
 #include "communication.hpp"
 #include "commander.hpp"
 #include "irreader.hpp"
+#include "driver.hpp"
 
 
 
@@ -74,6 +75,7 @@ void StartTaskManager(void *argument)
 	InitialiseTask(StartBlinky, &Blinky_attributes);
 	InitialiseTask(StartCommander, &Commander_attributes);
 	InitialiseTask(StartIRReader, &IRReader_attributes);
+	InitialiseTask(StartDriver, &Driver_attributes);
 
 	for (;;)
 	{
@@ -92,6 +94,7 @@ void print_commands() {
 	ROVER_PRINTLN("    - communicator");
 	ROVER_PRINTLN("    - commander");
 	ROVER_PRINTLN("    - irreader");
+	ROVER_PRINTLN("    - driver");
 }
 
 
@@ -141,6 +144,9 @@ int console_command(int argc, const char *argv[]) {
 		return 0;
 	} else if (!strcmp(argv[0], "irreader")) {
 		irreader_main(argc, argv);
+		return 0;
+	} else if (!strcmp(argv[0], "driver")) {
+		driver_main(argc, argv);
 		return 0;
 	}
 

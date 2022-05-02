@@ -7,7 +7,7 @@
 #include "cmsis_os.h"
 
 
-#define NUMBER_OF_TASKS 7
+#define NUMBER_OF_TASKS 8
 #define TASK_MANAGER_STACK_SIZE 128*4
 
 
