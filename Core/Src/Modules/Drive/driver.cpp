@@ -17,6 +17,8 @@
 static void run() {
 	// ToDo
 
+	// HELLO
+	ROVER_PRINTLN("Hello World!")
 
 	// Controls the frequency of the cyclic executive
 	HAL_Delay(15);
