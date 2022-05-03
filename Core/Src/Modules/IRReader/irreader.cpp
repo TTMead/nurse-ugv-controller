@@ -60,7 +60,7 @@ static void run() {
 
 	// Print the real-time sensor values to serial
 	if (print) {
-		//ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
+		ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
 	}
 
 	// Run time cyclic, record data 50 Hz

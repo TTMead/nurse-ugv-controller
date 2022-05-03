@@ -24,10 +24,13 @@
 #define OFF GPIO_PIN_RESET
 
 // IR Settings
-#define THRESHOLD 2000
+#define ON_WHITE_TRACK
+#define BLACKTHRESHOLD 2000
+#define WHITETHRESHOLD 100
 
 // PWM Settings
 #define FULLSPEED 1000
+#define SPEED 1
 
 // Direction commands
 #define FORWARD 1
@@ -40,7 +43,7 @@ uint8_t motorSpeed[2] = {0,0};
 
 // Comment this to use bang-bang
 #define USING_PID
-#define Kp 10
+#define Kp 1000
 #define Ki 0
 #define Kd 0
 
@@ -126,8 +129,8 @@ static void run() {
 		previousTime = previousTime + dt;
 
 		// Set motor efforts and clamp
-		motorSpeed[0] = clamp((500 + yawEffort), 0, 1000);
-		motorSpeed[1] = clamp((500 - yawEffort), 0, 1000);
+		motorSpeed[0] = SPEED * clamp((500 + yawEffort), 0, 1000);
+		motorSpeed[1] = SPEED * clamp((500 - yawEffort), 0, 1000);
 
 		ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d", (int)position, (int)yawEffort);
 
@@ -137,13 +140,13 @@ static void run() {
 
 	#else
 		// Bang-Bang Straight Path
-		if (sensor.s4 < THRESHOLD)
+		if (sensor.s4 < WHITETHRESHOLD)
 		{
 			// Turn Left
 			motorSpeed[0] = 40;
 			motorSpeed[1] = 60;
 		}
-		else if (sensor.s3 < THRESHOLD)
+		else if (sensor.s3 < WHITETHRESHOLD)
 		{
 			// Turn Right
 			motorSpeed[0] = 60;
@@ -160,10 +163,10 @@ static void run() {
 		//ROVER_PRINTLN("[Driver] Left Motor: %d, Right Motor: %d", motorSpeed[0], motorSpeed[1]);
 
 		// Print sensor/direction outputs
-		if (1) {
-			char dir; if (sensor.s4 < THRESHOLD) {dir = 'L';} else if (sensor.s3 < THRESHOLD) {dir = 'R';} else {dir = 'S';}
-			ROVER_PRINTLN("[Driver] %d %d %d %d %d %d %d %d %c", (sensor.s0 < THRESHOLD), (sensor.s1 < THRESHOLD), (sensor.s2 < THRESHOLD), (sensor.s3 < THRESHOLD), (sensor.s4 < THRESHOLD), (sensor.s5 < THRESHOLD), (sensor.s6 < THRESHOLD), (sensor.s7 < THRESHOLD), dir);
-		}
+		//if (1) {
+		//	char dir; if (sensor.s4 < THRESHOLD) {dir = 'L';} else if (sensor.s3 < THRESHOLD) {dir = 'R';} else {dir = 'S';}
+		//	ROVER_PRINTLN("[Driver] %d %d %d %d %d %d %d %d %c", (sensor.s0 < THRESHOLD), (sensor.s1 < THRESHOLD), (sensor.s2 < THRESHOLD), (sensor.s3 < THRESHOLD), (sensor.s4 < THRESHOLD), (sensor.s5 < THRESHOLD), (sensor.s6 < THRESHOLD), (sensor.s7 < THRESHOLD), dir);
+		//}
 	#endif
 
 	// Controls the frequency of the cyclic executive
