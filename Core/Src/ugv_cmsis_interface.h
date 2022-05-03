@@ -21,6 +21,8 @@ extern UART_HandleTypeDef *navigator_uart_handle;
 extern UART_HandleTypeDef *wifi_module_uart_handle;
 
 extern ADC_HandleTypeDef *sensor_adc_handle;
+extern TIM_HandleTypeDef *pwm_timer_handle;
+
 
 extern osThreadId_t task_handles[NUMBER_OF_TASKS];
 extern void StartTaskManager(void *argument);

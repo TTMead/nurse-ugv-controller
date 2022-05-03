@@ -73,6 +73,9 @@ UART_HandleTypeDef *wifi_module_uart_handle;
 
 // ADC Handle
 ADC_HandleTypeDef *sensor_adc_handle;
+
+// PWM Handle
+TIM_HandleTypeDef *pwm_timer_handle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -139,6 +142,8 @@ int main(void)
   navigator_uart_handle = &huart1;
 
   sensor_adc_handle = &hadc1;
+
+  pwm_timer_handle = &htim3;
 
   /* USER CODE END 2 */
 
@@ -397,6 +402,10 @@ static void MX_TIM3_Init(void)
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }

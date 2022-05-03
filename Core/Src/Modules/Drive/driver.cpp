@@ -12,18 +12,27 @@
 #include "stm32f4xx_hal.h"
 #include "eORB.hpp"
 #include "serial.h"
+#include "motor_driver.h"
 
+
+// GPIO mappings
 #define LEFTMOTORIN1 GPIO_PIN_6
 #define LEFTMOTORIN2 GPIO_PIN_7
 #define RIGHTMOTORIN3 GPIO_PIN_8
 #define RIGHTMOTORIN4 GPIO_PIN_9
 #define ON GPIO_PIN_SET
 #define OFF GPIO_PIN_RESET
+
+// IR Settings
+#define THRESHOLD 2000
+
+// PWM Settings
+#define FULLSPEED 100
+
+// Direction commands
 #define FORWARD 1
 #define BACKWARD 0
-#define THRESHOLD 2000
-#define FULLSPEED 100
-#define STOP 0
+#define STOP 2
 
 int sensor_sub;
 sensor_values_t sensor;
@@ -55,13 +64,13 @@ void rightMotorGPIO(int direction) {
 	
 	if (direction == FORWARD)
 	{
-		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN3, ON);
-		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN4, OFF);
+		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN3, OFF);
+		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN4, ON);
 	}
 	else if (direction == BACKWARD)
 	{
-		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN3, OFF);
-		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN4, ON);
+		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN3, ON);
+		HAL_GPIO_WritePin(GPIOC, RIGHTMOTORIN4, OFF);
 	}
 	else 
 	{
@@ -100,9 +109,11 @@ static void run() {
 		motorSpeed[1] = 50;
 	}
 
-	// Print motor speed
-	//ROVER_PRINTLN("[Driver] Left Motor: %d, Right Motor: %d", motorSpeed[0], motorSpeed[1]);
+	// Set motor speeds
+	//set_left_motor_speed(500);
+    set_right_motor_speed(500);
 
+	//ROVER_PRINTLN("[Driver] Left Motor: %d, Right Motor: %d", motorSpeed[0], motorSpeed[1]);
 	// Print sensor/direction outputs
 	if (1) {
 		char dir; if (sensor.s4 < THRESHOLD) {dir = 'L';} else if (sensor.s3 < THRESHOLD) {dir = 'R';} else {dir = 'S';}
@@ -116,10 +127,13 @@ static void run() {
 
 
 void StartDriver(void *argument) {
-	// Initialisation Code
+	// Sensor data subscription
 	sensor_sub = subscribe(TOPIC_SENSORS);
-	leftMotorGPIO(FORWARD);
+
+	// Initialise hardwares
+	//leftMotorGPIO(FORWARD);
 	rightMotorGPIO(FORWARD);
+	initialise_motor_pwm();
 
 	for (;;)
 	{
