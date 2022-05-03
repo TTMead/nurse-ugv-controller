@@ -27,7 +27,7 @@
 #define THRESHOLD 2000
 
 // PWM Settings
-#define FULLSPEED 100
+#define FULLSPEED 1000
 
 // Direction commands
 #define FORWARD 1
@@ -38,6 +38,15 @@ int sensor_sub;
 sensor_values_t sensor;
 uint8_t motorSpeed[2] = {0,0};
 
+// Comment this to use bang-bang
+#define USING_PID
+#define Kp 10
+#define Ki 0
+#define Kd 0
+
+PID_t pidLine;
+float previousPosition;
+uint64_t previousTime;
 
 // Motor Functions
 void leftMotorGPIO(int direction) {
@@ -80,6 +89,13 @@ void rightMotorGPIO(int direction) {
 	
 }
 
+// Position
+float linePosition(sensor_values_t x){
+	float sum = x.s0 + x.s1 + x.s2 + x.s3 + x.s4 + x.s5 + x.s6 + x.s7;
+	return (1.0*x.s0 + 2.0*x.s1 + 3.0*x.s2 + 4.0*x.s3 + 5.0*x.s4 + 6.0*x.s5 + 7.0*x.s6 + 8.0*x.s7)/(sum);
+}
+
+
 // Cyclic executive
 static void run() {
 
@@ -89,36 +105,66 @@ static void run() {
 		copy(sensor_sub, &sensor);
 	}
 
-	// Bang-Bang Straight Path
-	if (sensor.s4 < THRESHOLD)
-	{
-		// Turn Left
-		motorSpeed[0] = 40;
-		motorSpeed[1] = 60;
-	}
-	else if (sensor.s3 < THRESHOLD)
-	{
-		// Turn Right
-		motorSpeed[0] = 60;
-		motorSpeed[1] = 40;
-	}
-	else
-	{
-		// Go Straight
-		motorSpeed[0] = 50;
-		motorSpeed[1] = 50;
-	}
 
-	// Set motor speeds
-	//set_left_motor_speed(500);
-    set_right_motor_speed(500);
+	#ifdef USING_PID
 
-	//ROVER_PRINTLN("[Driver] Left Motor: %d, Right Motor: %d", motorSpeed[0], motorSpeed[1]);
-	// Print sensor/direction outputs
-	if (1) {
-		char dir; if (sensor.s4 < THRESHOLD) {dir = 'L';} else if (sensor.s3 < THRESHOLD) {dir = 'R';} else {dir = 'S';}
-		ROVER_PRINTLN("[Driver] %d %d %d %d %d %d %d %d %c", (sensor.s0 < THRESHOLD), (sensor.s1 < THRESHOLD), (sensor.s2 < THRESHOLD), (sensor.s3 < THRESHOLD), (sensor.s4 < THRESHOLD), (sensor.s5 < THRESHOLD), (sensor.s6 < THRESHOLD), (sensor.s7 < THRESHOLD), dir);
-	}
+		// Get change in time since last loop call
+		uint16_t dt = HAL_GetTick() - previousTime;
+
+		// Get current pos and derivative
+		float position = linePosition(sensor);
+		float positionDot = (position - previousPosition);
+
+		// Setpoint value
+		float setPoint = 4.5;
+
+		// Calculate desired yaw effort
+		int yawEffort = (int) pid_calculate(&pidLine, setPoint, position, positionDot, dt);
+
+		// Update previous position and previous time
+		previousPosition = position;
+		previousTime = previousTime + dt;
+
+		// Set motor efforts and clamp
+		motorSpeed[0] = clamp((500 + yawEffort), 0, 1000);
+		motorSpeed[1] = clamp((500 - yawEffort), 0, 1000);
+
+		ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d", (int)position, (int)yawEffort);
+
+
+		set_left_motor_speed(motorSpeed[0]);
+	    set_right_motor_speed(motorSpeed[1]);
+
+	#else
+		// Bang-Bang Straight Path
+		if (sensor.s4 < THRESHOLD)
+		{
+			// Turn Left
+			motorSpeed[0] = 40;
+			motorSpeed[1] = 60;
+		}
+		else if (sensor.s3 < THRESHOLD)
+		{
+			// Turn Right
+			motorSpeed[0] = 60;
+			motorSpeed[1] = 40;
+		}
+		else
+		{
+			// Go Straight
+			motorSpeed[0] = 50;
+			motorSpeed[1] = 50;
+		}
+
+		// Print motor speed
+		//ROVER_PRINTLN("[Driver] Left Motor: %d, Right Motor: %d", motorSpeed[0], motorSpeed[1]);
+
+		// Print sensor/direction outputs
+		if (1) {
+			char dir; if (sensor.s4 < THRESHOLD) {dir = 'L';} else if (sensor.s3 < THRESHOLD) {dir = 'R';} else {dir = 'S';}
+			ROVER_PRINTLN("[Driver] %d %d %d %d %d %d %d %d %c", (sensor.s0 < THRESHOLD), (sensor.s1 < THRESHOLD), (sensor.s2 < THRESHOLD), (sensor.s3 < THRESHOLD), (sensor.s4 < THRESHOLD), (sensor.s5 < THRESHOLD), (sensor.s6 < THRESHOLD), (sensor.s7 < THRESHOLD), dir);
+		}
+	#endif
 
 	// Controls the frequency of the cyclic executive
 	HAL_Delay(15);
@@ -131,9 +177,15 @@ void StartDriver(void *argument) {
 	sensor_sub = subscribe(TOPIC_SENSORS);
 
 	// Initialise hardwares
-	//leftMotorGPIO(FORWARD);
+	leftMotorGPIO(FORWARD);
 	rightMotorGPIO(FORWARD);
 	initialise_motor_pwm();
+
+	pid_init(&pidLine);
+	pid_set_parameters(&pidLine, Kp, Ki, Kd, 1000, -(FULLSPEED/2), (FULLSPEED/2));
+
+	previousPosition = 4.5;
+	previousTime = HAL_GetTick();
 
 	for (;;)
 	{

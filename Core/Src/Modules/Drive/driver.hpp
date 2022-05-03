@@ -8,6 +8,7 @@
  ************************************/
 
 #include "cmsis_os.h"
+#include "pid.h"
 
 const osThreadAttr_t Driver_attributes = {
   .name = "Drive Control",
