@@ -32,6 +32,11 @@
 #define FULLSPEED 1000
 #define SPEED 1
 
+#define LEFTBASESPEED 150
+#define RIGHTBASESPEED 150
+#define LEFTMAXSPEED 200
+#define RIGHTMAXSPEED 200
+
 // Direction commands
 #define FORWARD 1
 #define BACKWARD 0
@@ -42,8 +47,10 @@ sensor_values_t sensor;
 uint8_t motorSpeed[2] = {0,0};
 
 // Comment this to use bang-bang
-#define USING_PID
-#define Kp 1000
+#define PID
+
+// Experiment to determine these values
+#define Kp 0
 #define Ki 0
 #define Kd 0
 
@@ -108,8 +115,36 @@ static void run() {
 		copy(sensor_sub, &sensor);
 	}
 
+	#ifdef PID
+		// https://www.robotshop.com/community/blog/show/pid-tutorials-for-line-following
 
-	#ifdef USING_PID
+		// Current position of the robot
+		float position = linePosition(sensor);
+
+		// This is our goal (Corresponds to perfect placement) - may be a different value 
+		int setpoint = 2500;
+
+		// Calculate the error in position (Aim to make this zero - then the robot will follow the line smoothly)
+		// A value towards 0 indicates the robot is to far to the left, a value towards 5000 indicates the robot is to far to the right
+		int error = setpoint - position; // FOR BLACK ON WHITE: position - setpoint
+
+		// Use PID to calculate motorspeed
+		int motorSpeed = Kp * error + Kd * (error - lastError);
+		lastError = error;
+
+		// Any PWM motor value 0-255 should work
+		int leftMotorSpeed = LEFTBASESPEED - motorSpeed; // FOR BLACK ON WHITE: LEFTBASESPEED + motorSpeed
+		int rightMotorSpeed = RIGHTBASESPEED + motorSpeed; // FOR BLACK ON WHITE: RIGHTBASESPEED - motorSpeed
+
+		// Clamp the motor speed values to ensure they are operating within the correct range
+		if (leftMotorSpeed > LEFTMAXSPEED) leftMotorSpeed = LEFTMAXSPEED;
+		if (rightMotorSpeed > RIGHTMAXSPEED) rightMotorSpeed = RIGHTMAXSPEED;
+		if (leftMotorSpeed < 0) leftMotorSpeed = 0;
+		if (rightMotorSpeed < 0) rightMotorSpeed = 0;
+
+	#endif
+
+	#ifdef 
 
 		// Get change in time since last loop call
 		uint16_t dt = HAL_GetTick() - previousTime;
@@ -138,7 +173,9 @@ static void run() {
 		set_left_motor_speed(motorSpeed[0]);
 	    set_right_motor_speed(motorSpeed[1]);
 
-	#else
+	#endif
+
+	#ifdef
 		// Bang-Bang Straight Path
 		if (sensor.s4 < WHITETHRESHOLD)
 		{
@@ -173,8 +210,6 @@ static void run() {
 	HAL_Delay(15);
 }
 
-
-
 void StartDriver(void *argument) {
 	// Sensor data subscription
 	sensor_sub = subscribe(TOPIC_SENSORS);
@@ -189,6 +224,8 @@ void StartDriver(void *argument) {
 
 	previousPosition = 4.5;
 	previousTime = HAL_GetTick();
+
+	int lastError = 0;
 
 	for (;;)
 	{
