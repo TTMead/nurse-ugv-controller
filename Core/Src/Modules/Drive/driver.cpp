@@ -19,13 +19,13 @@
 		/* **** Settings **** */
 
 /* Speed Settings */
-#define SPEED_LOW 300
-#define SPEED_MED 500
-#define SPEED_HIGH 800
+#define SPEED_LOW 0.5
+#define SPEED_MED 1
+#define SPEED_HIGH 1.5
 #define SPEED SPEED_LOW /* Set speed here */
 
 /* Control Settings */
-#define Kp 0.05
+#define Kp 0.08
 #define Ki 0
 #define Kd 0 //0.002
 
@@ -38,6 +38,9 @@
 // #define PID_V2
 #define PID_V1
 // #define BANG_BANG
+
+/* PWM Settings */
+#define MOTOR_MAX_PWM 1000
 
 
 		/* **** Mappings **** */
@@ -183,12 +186,12 @@ static void run() {
 		previousTime = previousTime + dt;
 
 		// Set motor efforts and clamp
-		motorSpeed[0] = (int) ((float)(clamp((speed + yawEffort), 0.0, 1000.0)));// (clamp((SPEED + yawEffort), 0, 1000));
-		motorSpeed[1] = (int) ((float)(clamp((speed - yawEffort), 0.0, 1000.0)));
+		motorSpeed[0] = (int) (SPEED*clamp((500.0 + yawEffort), 0.0, 1000.0));
+		motorSpeed[1] = (int) (SPEED*clamp((500.0 - yawEffort), 0.0, 1000.0));
 
 		ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
 
-
+		// Send motor speeds to PWM
 		set_left_motor_speed(motorSpeed[0]);
 	    set_right_motor_speed(motorSpeed[1]);
 
@@ -243,7 +246,7 @@ void StartDriver(void *argument) {
 	initialise_motor_pwm();
 
 	pid_init(&pidLine);
-	pid_set_parameters(&pidLine, Kp, Ki, Kd, 1000, -(FULLSPEED/2), (FULLSPEED/2));
+	pid_set_parameters(&pidLine, Kp, Ki, Kd, 1000, -(MOTOR_MAX_PWM/2), (MOTOR_MAX_PWM));
 
 	previousPosition = 4.5;
 	previousTime = HAL_GetTick();
