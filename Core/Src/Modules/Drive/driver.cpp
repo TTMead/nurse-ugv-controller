@@ -15,7 +15,34 @@
 #include "motor_driver.h"
 
 
-// GPIO mappings
+
+		/* **** Settings **** */
+
+/* Speed Settings */
+#define SPEED_LOW 300
+#define SPEED_MED 500
+#define SPEED_HIGH 800
+#define SPEED SPEED_LOW /* Set speed here */
+
+/* Control Settings */
+#define Kp 0.05
+#define Ki 0
+#define Kd 0 //0.002
+
+/* IR Settings */
+#define ON_WHITE_TRACK
+#define BLACKTHRESHOLD 2000
+#define WHITETHRESHOLD 100
+
+/* Algorithm Settings (Don't comment the one to use) */
+// #define PID_V2
+#define PID_V1
+// #define BANG_BANG
+
+
+		/* **** Mappings **** */
+
+/* GPIO mappings */
 #define LEFTMOTORIN1 GPIO_PIN_6
 #define LEFTMOTORIN2 GPIO_PIN_7
 #define RIGHTMOTORIN3 GPIO_PIN_8
@@ -23,42 +50,27 @@
 #define ON GPIO_PIN_SET
 #define OFF GPIO_PIN_RESET
 
-// IR Settings
-#define ON_WHITE_TRACK
-#define BLACKTHRESHOLD 2000
-#define WHITETHRESHOLD 100
-
-// PWM Settings
-#define FULLSPEED 1000
-#define SPEED 1
-
-#define LEFTBASESPEED 150
-#define RIGHTBASESPEED 150
-#define LEFTMAXSPEED 200
-#define RIGHTMAXSPEED 200
-
-// Direction commands
+/* Direction mappings */
 #define FORWARD 1
 #define BACKWARD 0
 #define STOP 2
 
-int sensor_sub;
-sensor_values_t sensor;
-uint8_t motorSpeed[2] = {0,0};
 
-// Comment this to use bang-bang
-#define PID
 
-// Experiment to determine these values
-#define Kp 0
-#define Ki 0
-#define Kd 0
+		/* **** Local variables **** */
+
+int sensor_sub; // Subscription to the sensor topic
+sensor_values_t sensor; // Memory location of received sensor values
+int motorSpeed[2] = {0,0}; // The speeds of the left (0) and right (1) motors
 
 PID_t pidLine;
 float previousPosition;
 uint64_t previousTime;
+float previousError;
 
-// Motor Functions
+
+		/* **** Motor Directional Functions **** */
+
 void leftMotorGPIO(int direction) {
 	
 	if (direction == FORWARD)
@@ -99,14 +111,20 @@ void rightMotorGPIO(int direction) {
 	
 }
 
-// Position
+
+
+/*
+ * Calculates the position of the rover given a set of sensor values
+ */
 float linePosition(sensor_values_t x){
 	float sum = x.s0 + x.s1 + x.s2 + x.s3 + x.s4 + x.s5 + x.s6 + x.s7;
-	return (1.0*x.s0 + 2.0*x.s1 + 3.0*x.s2 + 4.0*x.s3 + 5.0*x.s4 + 6.0*x.s5 + 7.0*x.s6 + 8.0*x.s7)/(sum);
+	return 1000*(1.0*x.s0 + 2.0*x.s1 + 3.0*x.s2 + 4.0*x.s3 + 5.0*x.s4 + 6.0*x.s5 + 7.0*x.s6 + 8.0*x.s7)/(sum);
 }
 
 
-// Cyclic executive
+/*
+ * Cyclic executive
+ */
 static void run() {
 
 	// Receive sensor data
@@ -115,13 +133,13 @@ static void run() {
 		copy(sensor_sub, &sensor);
 	}
 
-	#ifdef PID
+	#ifdef PID_V2
 		// https://www.robotshop.com/community/blog/show/pid-tutorials-for-line-following
 
 		// Current position of the robot
-		float position = linePosition(sensor);
+		float position = sensor;
 
-		// This is our goal (Corresponds to perfect placement) - may be a different value 
+		// This is our goal (Corresponds to perfect placement) - may be a different value
 		int setpoint = 2500;
 
 		// Calculate the error in position (Aim to make this zero - then the robot will follow the line smoothly)
@@ -144,30 +162,31 @@ static void run() {
 
 	#endif
 
-	#ifdef 
+	#ifdef PID_V1
 
 		// Get change in time since last loop call
-		uint16_t dt = HAL_GetTick() - previousTime;
+		float dt = HAL_GetTick() - previousTime;
 
 		// Get current pos and derivative
 		float position = linePosition(sensor);
-		float positionDot = (position - previousPosition);
+		// float positionDot = (position - previousPosition);
 
 		// Setpoint value
-		float setPoint = 4.5;
+		float setPoint = 4500;
 
 		// Calculate desired yaw effort
-		int yawEffort = (int) pid_calculate(&pidLine, setPoint, position, positionDot, dt);
+		int yawEffort = (int) (Kp*(position - setPoint) + (Kd*((setPoint - position) - previousError)));
+		//int yawEffort = (int) pid_calculate(&pidLine, setPoint, position, positionDot, dt/1000.0);
 
 		// Update previous position and previous time
 		previousPosition = position;
 		previousTime = previousTime + dt;
 
 		// Set motor efforts and clamp
-		motorSpeed[0] = SPEED * clamp((500 + yawEffort), 0, 1000);
-		motorSpeed[1] = SPEED * clamp((500 - yawEffort), 0, 1000);
+		motorSpeed[0] = (int) ((float)(clamp((speed + yawEffort), 0.0, 1000.0)));// (clamp((SPEED + yawEffort), 0, 1000));
+		motorSpeed[1] = (int) ((float)(clamp((speed - yawEffort), 0.0, 1000.0)));
 
-		ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d", (int)position, (int)yawEffort);
+		ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
 
 
 		set_left_motor_speed(motorSpeed[0]);
@@ -175,7 +194,7 @@ static void run() {
 
 	#endif
 
-	#ifdef
+	#ifdef BANG_BANG
 		// Bang-Bang Straight Path
 		if (sensor.s4 < WHITETHRESHOLD)
 		{
@@ -210,6 +229,10 @@ static void run() {
 	HAL_Delay(15);
 }
 
+
+/*
+ * Initialisation function
+ */
 void StartDriver(void *argument) {
 	// Sensor data subscription
 	sensor_sub = subscribe(TOPIC_SENSORS);
@@ -225,7 +248,8 @@ void StartDriver(void *argument) {
 	previousPosition = 4.5;
 	previousTime = HAL_GetTick();
 
-	int lastError = 0;
+	//int lastError = 0;
+	previousError = 4500;
 
 	for (;;)
 	{
@@ -236,7 +260,10 @@ void StartDriver(void *argument) {
 }
 
 
-// Console Interface
+/*
+ * Console Interface
+ */
 int driver_main(int argc, const char *argv[]) {
+	// ToDo: Implement
 	return 0;
 }

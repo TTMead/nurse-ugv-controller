@@ -58,7 +58,7 @@ float pid_calculate(PID_t *pid, float sp, float val, float val_dot, float dt)
 	float output = (error * pid->kp) + (error_dot * pid->kd) + (pid->integral * pid->ki);
 
 	/* limit output */
-	clamp(output, pid->min, pid->max);
+	// clamp(output, pid->min, pid->max);
 
 	return output;
 }
