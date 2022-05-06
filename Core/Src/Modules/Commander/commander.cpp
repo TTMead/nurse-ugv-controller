@@ -41,17 +41,20 @@ enum STATE {
 	DISARMED,
 	IDLE,
 	DRIVING,
-	SERVING
+	SERVING,
+	ESTOP
 } state;
 
-const char *state_names[] = {"Disarmed","Idle","Driving","Serving"};
+const char *state_names[] = {"Disarmed","Idle","Driving","Serving", "E-STOP"};
 
+waypoint previous_waypoint;
 waypoint current_waypoint;
-waypoint waypoint_queue[MAX_NUMBER_WAYPOINTS];
-uint8_t waypoints_in_queue;
 
 static waypoint_t incomming_waypoint;
 static system_command_t incomming_command;
+
+static bool print_state;
+
 
 /* Subscription handles */
 int waypoint_sub;
@@ -74,48 +77,41 @@ int get_directions(waypoint a, waypoint b, drive_cmd *buffer) {
 
 
 static void run() {
-	// Check for a new waypoint message
-	if (check(waypoint_sub)) {
-		// Store the new waypoint
-		copy(waypoint_sub, &incomming_waypoint);
-
-		// Add it to the top of queue
-		if (waypoints_in_queue < MAX_NUMBER_WAYPOINTS) {
-			waypoint_queue[waypoints_in_queue] = (waypoint) incomming_waypoint.waypoint_num;
-			waypoints_in_queue ++;
-		}
+	// Check incomming system commands
+	if (check(sys_cmd_sub)) {
+		// Grab the new message
+		copy(sys_cmd_sub, &incomming_command);
 	}
 
-	// State machine
-	if (state == DISARMED) {
-		// Check incomming system commands
-		if (check(sys_cmd_sub)) {
-			// Grab the new message
-			copy(sys_cmd_sub, &incomming_command);
+	if (incomming_command.estop) {
+		state = ESTOP;
+	}
 
-			// If told to arm, switch to idle state
-			if (incomming_command.arm) {
-				state = IDLE;
-			}
+		/****** State machine ******/
+	if (state == DISARMED) {
+		// If told to arm, switch to idle state
+		if (incomming_command.arm) {
+			state = IDLE;
 		}
 	} else if (state == IDLE) {
-		// Check if any waypoints in the queue, if so start driving to them
-		if (waypoints_in_queue > 0) {
+		// Check for a new waypoint message
+		if (check(waypoint_sub)) {
+			// Store the new waypoint
+			copy(waypoint_sub, &incomming_waypoint);
+
+			// Switch to driving
 			state = DRIVING;
 
-			// Send a message to the drive train to the waypoint at the bottom of the queue
+			// Send a message to drive train
 			drive_command_t drive_msg;
 			drive_msg.timestamp = HAL_GetTick();
-			get_directions(current_waypoint, waypoint_queue[0], drive_msg.commands);
-			drive_msg.end_waypoint = waypoint_queue[0];
-
+			get_directions(current_waypoint, previous_waypoint, drive_msg.commands);
 			publish(TOPIC_DRIVE_COMMAND, &drive_msg);
+		}
 
-			// Shift waypoint queue down
-			waypoints_in_queue --;
-			for (int i = 0; i < waypoints_in_queue; i++) {
-				waypoint_queue[i] = waypoint_queue[i+1];
-			}
+		// Check for disarm
+		if (incomming_command.disarm) {
+			state = DISARMED;
 		}
 
 	} else if (state == DRIVING) {
@@ -123,13 +119,24 @@ static void run() {
 		if (incomming_command.waypoint_reached) {
 			// Switch to serve mode
 			state = SERVING;
+
+			// Inform the pi
+			// ToDo
 		}
+
 	} else if (state == SERVING) {
-		// Check if the serving has been finished.
+		// Check if the serving has been finished (received from the pi)
 		if (incomming_command.serving_completed) {
 			// Switch back to idling
 			state = IDLE;
 		}
+
+	}
+		/****** End of State machine ******/
+
+	// Print the state if activated
+	if (print_state) {
+		ROVER_PRINTLN("[Commander] Commander State: %s", state_names[(int)state]);
 	}
 
 	// Enforce control loop
@@ -142,7 +149,8 @@ void StartCommander(void *argument) {
 	waypoint_sub = subscribe(TOPIC_WAYPOINT);
 	sys_cmd_sub = subscribe(TOPIC_SYS_COMMAND);
 
-	waypoints_in_queue = 0;
+	print_state = false;
+	state = DISARMED;
 
 	for (;;)
 	{
@@ -163,7 +171,13 @@ int commander_main(int argc, const char *argv[]) {
 
 	// Handle the command
 	if (!strcmp(argv[1], "printstate")) {
-		ROVER_PRINTLN("[Commander] Commander State: %s", state_names[(int)state]);
+		// Toggle printstate
+		print_state = !print_state;
+
+		// Inform via serial
+		const char *text;
+		if (print_state) { text = "on "; } else { text = "off"; }
+		ROVER_PRINTLN("[Commander] Printing states, %s", text);
 		return 0;
 	}
 

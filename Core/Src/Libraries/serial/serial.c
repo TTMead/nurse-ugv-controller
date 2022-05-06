@@ -87,18 +87,19 @@ void ROVER_PRINTLN(const char *p_string, ...)
 }
 
 
+
+// Pointers to variables that depend on which uart is being called
+uint32_t* counter_ptr;
+UART_HandleTypeDef* uart_handle;
+uint8_t* memory_buf;
+bool* read;
+
 /* HAL_UART_RxCpltCallback
  *
  * This interrupt is called by the HAL middleware whenever a uart message is received on a non-blocking comms port (i.e. wifi or nav)
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	// Pointers to variables that depend on which uart is being called
-	uint32_t* counter_ptr;
-	UART_HandleTypeDef* uart_handle;
-	uint8_t* memory_buf;
-	bool* read;
-
 	// Set the appropriate pointers
 	if (huart == serial_uart_handle) {
 		counter_ptr = &serial_counter;
@@ -116,8 +117,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		memory_buf = nav_buff_pointer;
 		read = &nav_read;
 	}
-
-
 
 	// If this buffer has been read
 	if (*read) {

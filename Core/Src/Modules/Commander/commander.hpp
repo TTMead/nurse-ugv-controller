@@ -13,7 +13,7 @@
 
 const osThreadAttr_t Commander_attributes = {
   .name = "Commander",
-  .stack_size = 256*2,
+  .stack_size = 256*8,
   .priority = (osPriority_t) osPriorityHigh,
 };
 

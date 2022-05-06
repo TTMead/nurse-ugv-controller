@@ -36,7 +36,7 @@
 
 /* Algorithm Settings (Don't comment the one to use) */
 // #define PID_V2
-#define PID_V1
+// #define PID_V1
 // #define BANG_BANG
 
 /* PWM Settings */

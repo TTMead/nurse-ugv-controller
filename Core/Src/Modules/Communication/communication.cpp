@@ -10,9 +10,11 @@
 
 #include "serial.h"
 #include "msg_heartbeat.h"
+#include "msg_arm.h"
 #include "stm32f4xx_hal.h"
 #include "communication.hpp"
 #include "taskmanager.hpp"
+#include "eORB.hpp"
 #include <string.h>
 #include <string>
 
@@ -82,17 +84,21 @@ void handle_wifi_command() {
 
 	// If the message fails the unpacking
 	if (!unpack_message(&id, &payload_length, payload, (uint8_t*) cmd.c_str()) == 0) {
-		// Print warning if wifi debug is on
-		if (debug_wifi) { ROVER_PRINTLN("[WiFi] A message failed checksum!"); }
+		// Print warning
+		// ROVER_PRINTLN("[Communicator] A WiFi message failed checksum!");
 	} else {
-
 		// Handle the command
 		if (id == MSG_ID_HEARTBEAT) {
 			if (debug_wifi) { ROVER_PRINTLN("[WiFi] Heartbeat from Component %d received!", payload[0]); };
-		} else {
-			if (debug_wifi) { ROVER_PRINTLN("[WiFi] Unknown message ID, %d.", id); };
 		}
-
+		if (id == MSG_ID_ARM) {
+			// Send the arm system command
+			system_command_t command;
+			command.timestamp = HAL_GetTick();
+			command.arm = payload[0]; command.disarm = 0; command.estop = 0;
+			command.waypoint_reached = 0; command.serving_completed = 0;
+			publish(TOPIC_SYS_COMMAND, &command);
+		}
 	}
 
 
@@ -234,49 +240,29 @@ void StartCommunication(void *argument) {
 	osThreadTerminate(NULL);
 }
 
-void print_options() {
-	ROVER_PRINTLN("options are:");
-	ROVER_PRINTLN("    - debugwifi");
-}
-
 
 int communication_main(int argc, const char *argv[]) {
 	// Check if the command has enough arguments
 	if (argc < 2) {
 		ROVER_PRINT("[Communicator] Please enter a command, ");
-		print_options();
+		ROVER_PRINTLN("    - debugwifi");
 		return 1;
 	}
 
 	// Handle the command
 	if (!strcmp(argv[1], "debugwifi")) {
+		// Toggle the wifi printing
+		debug_wifi = !debug_wifi;
 
-		if (argc < 3) {
-			ROVER_PRINTLN("[Communicator] Please enter 'on' or 'off'");
-			return 1;
-		}
-
-		if (!strcmp(argv[2], "on")) {
-			debug_wifi = true;
-			ROVER_PRINTLN("[Communicator] WiFi debug on!");
-			return 0;
-		} else if (!strcmp(argv[2], "off")) {
-			debug_wifi = false;
-			ROVER_PRINTLN("[Communicator] WiFi debug off!");
-			return 0;
-		} else {
-			ROVER_PRINTLN("[Communicator] Please specify 'on' or 'off'");
-			return 1;
-		}
-
-
-
+		// Print outcome
+		const char *text;
+		if (debug_wifi) { text = "on "; } else { text = "off"; }
+		ROVER_PRINTLN("[Communicator] Debug WiFi %s!", text);
 	}
-
 
 	// Command wasn't recognised
 	ROVER_PRINT("[Communicator] Unrecognised command, ");
-	print_options();
+	ROVER_PRINTLN("    - debugwifi");
 	return 2;
 }
 
