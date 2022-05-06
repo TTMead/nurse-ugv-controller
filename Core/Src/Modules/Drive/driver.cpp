@@ -13,21 +13,22 @@
 #include "eORB.hpp"
 #include "serial.h"
 #include "motor_driver.h"
+#include "string.h"
 
 
 
 		/* **** Settings **** */
 
 /* Speed Settings */
-#define SPEED_LOW 0.5
+#define SPEED_LOW 0.1
 #define SPEED_MED 1
 #define SPEED_HIGH 1.5
-#define SPEED SPEED_LOW /* Set speed here */
+float SPEED;
 
 /* Control Settings */
-#define Kp 0.08
+#define Kp 0.7 //Straight: 0.18
 #define Ki 0
-#define Kd 0 //0.002
+#define Kd 3.5 //Straight: 2
 
 /* IR Settings */
 #define ON_WHITE_TRACK
@@ -36,7 +37,7 @@
 
 /* Algorithm Settings (Don't comment the one to use) */
 // #define PID_V2
-// #define PID_V1
+#define PID_V1
 // #define BANG_BANG
 
 /* PWM Settings */
@@ -65,11 +66,14 @@
 int sensor_sub; // Subscription to the sensor topic
 sensor_values_t sensor; // Memory location of received sensor values
 int motorSpeed[2] = {0,0}; // The speeds of the left (0) and right (1) motors
+int print_counter;
 
 PID_t pidLine;
 float previousPosition;
 uint64_t previousTime;
 float previousError;
+
+bool isDriving;
 
 
 		/* **** Motor Directional Functions **** */
@@ -130,6 +134,11 @@ float linePosition(sensor_values_t x){
  */
 static void run() {
 
+	if (!isDriving) {
+		HAL_Delay(15);
+		return;
+	}
+
 	// Receive sensor data
 	if (check(sensor_sub))
 	{
@@ -178,18 +187,27 @@ static void run() {
 		float setPoint = 4500;
 
 		// Calculate desired yaw effort
+#ifdef ON_WHITE_TRACK
+		int yawEffort = (int) (-Kp*(position - setPoint) + (-Kd*((position - setPoint) - previousError)));
+#else
 		int yawEffort = (int) (Kp*(position - setPoint) + (Kd*((setPoint - position) - previousError)));
+#endif
 		//int yawEffort = (int) pid_calculate(&pidLine, setPoint, position, positionDot, dt/1000.0);
 
 		// Update previous position and previous time
 		previousPosition = position;
 		previousTime = previousTime + dt;
+		previousError = (position - setPoint);
 
 		// Set motor efforts and clamp
 		motorSpeed[0] = (int) (SPEED*clamp((500.0 + yawEffort), 0.0, 1000.0));
 		motorSpeed[1] = (int) (SPEED*clamp((500.0 - yawEffort), 0.0, 1000.0));
 
-		ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+		print_counter = print_counter + 1;
+		if (print_counter > 10) {
+			print_counter = 0;
+			ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+		}
 
 		// Send motor speeds to PWM
 		set_left_motor_speed(motorSpeed[0]);
@@ -240,6 +258,8 @@ void StartDriver(void *argument) {
 	// Sensor data subscription
 	sensor_sub = subscribe(TOPIC_SENSORS);
 
+	SPEED = SPEED_LOW;
+
 	// Initialise hardwares
 	leftMotorGPIO(FORWARD);
 	rightMotorGPIO(FORWARD);
@@ -252,7 +272,11 @@ void StartDriver(void *argument) {
 	previousTime = HAL_GetTick();
 
 	//int lastError = 0;
-	previousError = 4500;
+	previousError = 0;
+
+	print_counter = 0;
+
+	isDriving = false;
 
 	for (;;)
 	{
@@ -267,6 +291,53 @@ void StartDriver(void *argument) {
  * Console Interface
  */
 int driver_main(int argc, const char *argv[]) {
-	// ToDo: Implement
+
+	if (argc < 2) {
+		ROVER_PRINTLN("[Driver] Please enter a command: Stop, Start");
+		return 1;
+	}
+
+	if (!strcmp(argv[1], "stop")) {
+		isDriving = false;
+		set_left_motor_speed(0);
+		set_right_motor_speed(0);
+		HAL_Delay(50);
+		set_left_motor_speed(0);
+		set_right_motor_speed(0);
+		HAL_Delay(50);
+		set_left_motor_speed(0);
+		set_right_motor_speed(0);
+		return 0;
+	}
+
+	if (argc < 3) {
+		ROVER_PRINTLN("[Driver] Please enter a command an option: low, med, high");
+		return 1;
+	}
+
+	if (!strcmp(argv[1], "start")) {
+		isDriving = true;
+		if (!strcmp(argv[2], "low")) {
+					SPEED = SPEED_LOW;
+					return 0;
+		}
+		if (!strcmp(argv[2], "med")) {
+			SPEED = SPEED_MED;
+			return 0;
+		}
+		if (!strcmp(argv[2], "high")) {
+			SPEED = SPEED_HIGH;
+			return 0;
+		}
+		isDriving = false;
+		return 1;
+	}
+
+
+
+
+
+
+
 	return 0;
 }
