@@ -117,6 +117,10 @@ static void run() {
 		// Check for disarm
 		if (incomming_command.disarm) {
 			state = DISARMED;
+
+			// Stop driver
+			const char * argv[] = {"driver", "stop"};
+			driver_main(2, argv);
 		}
 
 	} else if (state == DRIVING) {
