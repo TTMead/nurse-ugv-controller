@@ -95,7 +95,7 @@ void handle_wifi_command() {
 			// Send the arm system command
 			system_command_t command;
 			command.timestamp = HAL_GetTick();
-			command.arm = payload[0]; command.disarm = 0; command.estop = 0;
+			command.arm = payload[0]; command.disarm = !payload[0]; command.estop = 0;
 			command.waypoint_reached = 0; command.serving_completed = 0;
 			publish(TOPIC_SYS_COMMAND, &command);
 		}
