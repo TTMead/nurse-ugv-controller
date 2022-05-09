@@ -16,7 +16,7 @@ extern ADC_HandleTypeDef *sensor_adc_handle;
 
 const osThreadAttr_t IRReader_attributes = {
   .name = "IR Reader",
-  .stack_size = 256,
+  .stack_size = 256*2,
   .priority = (osPriority_t) osPriorityHigh,
 };
 

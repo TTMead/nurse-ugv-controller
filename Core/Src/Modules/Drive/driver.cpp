@@ -211,7 +211,7 @@ static void run() {
 		print_counter = print_counter + 1;
 		if (print_counter > 20) {
 			print_counter = 0;
-			ROVER_PRINTLN("[Driver] Control Rate %d, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+			ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
 		}
 
 		// Send motor speeds to PWM

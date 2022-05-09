@@ -35,6 +35,14 @@ volatile int ADC_READY = 0; // set by callback
 
 sensor_values_t sensor_data;
 
+int ir_print_counter;
+
+#define PRINT_FPS
+
+#ifdef PRINT_FPS
+uint64_t ir_previousTime;
+#endif
+
 static void run() {
 	HAL_ADC_Start_DMA(sensor_adc_handle, (uint32_t*)ADC_values, 8);
 
@@ -60,8 +68,22 @@ static void run() {
 
 	// Print the real-time sensor values to serial
 	if (print) {
-		ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
+		ir_print_counter = ir_print_counter + 1;
+		if (ir_print_counter > 20) {
+			ir_print_counter = 0;
+			#ifdef PRINT_FPS
+			ROVER_PRINTLN("[irreader] Rate: %d Hz, S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", (int)(1000.0/(HAL_GetTick()-ir_previousTime)), ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
+			#else
+			ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
+			#endif
+		}
+
+		#ifdef PRINT_FPS
+		ir_previousTime = HAL_GetTick();
+		#endif
 	}
+
+
 
 	// Run time cyclic, record data 40 Hz
 	osDelay(20);
@@ -79,6 +101,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 void StartIRReader(void *argument) {
 	print = false;
+	ir_print_counter = 20;
+
+	#ifdef PRINT_FPS
+	ir_previousTime = HAL_GetTick();
+	#endif
 
 	for (;;)
 	{
@@ -96,7 +123,7 @@ int irreader_main(int argc, const char *argv[]) {
 	}
 
 	if (!strcmp(argv[1], "print")) {
-		print = true;
+		print = !print;
 		return 0;
 	}
 
