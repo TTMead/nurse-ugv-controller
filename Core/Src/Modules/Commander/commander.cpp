@@ -14,6 +14,7 @@
 #include "stm32f4xx_hal.h"
 #include "serial.h"
 #include "string.h"
+#include "driver.hpp"
 
 #define MAX_NUMBER_WAYPOINTS 5
 
@@ -92,6 +93,10 @@ static void run() {
 		// If told to arm, switch to idle state
 		if (incomming_command.arm) {
 			state = IDLE;
+
+			// Start drive train
+			const char * argv[] = {"driver", "start", "low"};
+			driver_main(3, argv);
 		}
 	} else if (state == IDLE) {
 		// Check for a new waypoint message
