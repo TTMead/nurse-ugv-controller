@@ -95,7 +95,7 @@ static void run() {
 			state = IDLE;
 
 			// Start drive train
-			const char * argv[] = {"driver", "start", "low"};
+			const char * argv[] = {"driver", "start", "med"};
 			driver_main(3, argv);
 		}
 	} else if (state == IDLE) {

@@ -20,9 +20,9 @@
 		/* **** Settings **** */
 
 /* Speed Settings */
-#define SPEED_LOW 0.1
-#define SPEED_MED 1
-#define SPEED_HIGH 1.5
+#define SPEED_LOW 0.4
+#define SPEED_MED 0.6
+#define SPEED_HIGH 0.8
 float SPEED;
 
 /* Control Settings */
