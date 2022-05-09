@@ -63,17 +63,21 @@ float SPEED;
 
 		/* **** Local variables **** */
 
+/* Generic */
 int sensor_sub; // Subscription to the sensor topic
 sensor_values_t sensor; // Memory location of received sensor values
-int motorSpeed[2] = {0,0}; // The speeds of the left (0) and right (1) motors
 int print_counter;
 
+/* Control variables */
 PID_t pidLine;
 float previousPosition;
 uint64_t previousTime;
 float previousError;
+int motorSpeed[2] = {0,0}; // The speeds of the left (0) and right (1) motors
 
-bool isDriving;
+/* State variables */
+bool isDriving; // Controls whether the drive train is on
+
 
 
 		/* **** Motor Directional Functions **** */
@@ -97,7 +101,6 @@ void leftMotorGPIO(int direction) {
 	}
 	
 }
-
 void rightMotorGPIO(int direction) {
 	
 	if (direction == FORWARD)
@@ -118,6 +121,9 @@ void rightMotorGPIO(int direction) {
 	
 }
 
+		/* **** END Motor Directional Functions **** */
+
+
 
 
 /*
@@ -133,7 +139,6 @@ float linePosition(sensor_values_t x){
  * Cyclic executive
  */
 static void run() {
-
 	if (!isDriving) {
 		HAL_Delay(15);
 		return;
@@ -204,9 +209,9 @@ static void run() {
 		motorSpeed[1] = (int) (SPEED*clamp((500.0 - yawEffort), 0.0, 1000.0));
 
 		print_counter = print_counter + 1;
-		if (print_counter > 10) {
+		if (print_counter > 20) {
 			print_counter = 0;
-			ROVER_PRINTLN("[Driver] Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+			ROVER_PRINTLN("[Driver] Control Rate %d, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
 		}
 
 		// Send motor speeds to PWM
@@ -293,7 +298,7 @@ void StartDriver(void *argument) {
 int driver_main(int argc, const char *argv[]) {
 
 	if (argc < 2) {
-		ROVER_PRINTLN("[Driver] Please enter a command: Stop, Start");
+		ROVER_PRINTLN("[Driver] Please enter a command: Stop, Start, FPS");
 		return 1;
 	}
 
