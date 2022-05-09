@@ -41,7 +41,7 @@ static void run() {
 	// While data is being sent by the dma
 	while (ADC_READY == 0) {
 		// Just wait a few milliseconds
-		HAL_Delay(3);
+		osDelay(3);
 	}
 	ADC_READY = 0;
 
@@ -63,8 +63,8 @@ static void run() {
 		ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", ADC_values[0], ADC_values[1], ADC_values[2], ADC_values[3], ADC_values[4], ADC_values[5], ADC_values[6], ADC_values[7]);
 	}
 
-	// Run time cyclic, record data 50 Hz
-	HAL_Delay(20);
+	// Run time cyclic, record data 40 Hz
+	osDelay(20);
 }
 
 

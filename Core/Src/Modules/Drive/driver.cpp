@@ -140,7 +140,7 @@ float linePosition(sensor_values_t x){
  */
 static void run() {
 	if (!isDriving) {
-		HAL_Delay(15);
+		osDelay(15);
 		return;
 	}
 
@@ -243,7 +243,7 @@ static void run() {
 	#endif
 
 	// Controls the frequency of the cyclic executive
-	HAL_Delay(15);
+	osDelay(15);
 }
 
 
@@ -297,10 +297,10 @@ int driver_main(int argc, const char *argv[]) {
 		isDriving = false;
 		set_left_motor_speed(0);
 		set_right_motor_speed(0);
-		HAL_Delay(50);
+		osDelay(50);
 		set_left_motor_speed(0);
 		set_right_motor_speed(0);
-		HAL_Delay(50);
+		osDelay(50);
 		set_left_motor_speed(0);
 		set_right_motor_speed(0);
 		return 0;
