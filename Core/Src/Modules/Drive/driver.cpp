@@ -24,7 +24,7 @@
 #define SPEED_LOW 0.4
 #define SPEED_MED 0.6
 #define SPEED_HIGH 0.8
-float SPEED;
+float SPEED = SPEED_LOW;
 
 /* Control Settings */
 #define Kp 0.7 //Straight: 0.18
@@ -76,7 +76,7 @@ uint8_t previous_waypoint;
 uint8_t current_waypoint;
 
 drive_cmd drive_commands[MAX_TURN_COUNT];
-
+int drive_command_counter;
 
 int print_counter;
 bool debug;
@@ -147,14 +147,61 @@ float linePosition(sensor_values_t x){
 	return 1000*(1.0*x.s0 + 2.0*x.s1 + 3.0*x.s2 + 4.0*x.s3 + 5.0*x.s4 + 6.0*x.s5 + 7.0*x.s6 + 8.0*x.s7)/(sum);
 }
 
+/*
+ * Calculates the position of the rover given a set of sensor values
+ */
+bool on_intersection(sensor_values_t x){
+	float sum = x.s0 + x.s1 + x.s2 + x.s3 + x.s4 + x.s5 + x.s6 + x.s7;
+	float avg = sum/8;
 
-void Drive() {
-	// Receive sensor data
-	if (check(sensor_sub))
+	if (avg < 500)
 	{
-		copy(sensor_sub, &sensor_msg);
+		return 1;
 	}
+	else
+	{
+		return 0;
+	}
+}
 
+void runExtraInch() {
+
+}
+
+void turnLeft() {
+	leftMotorGPIO(BACKWARD);
+	rightMotorGPIO(FORWARD);
+
+	set_left_motor_speed(SPEED_LOW);
+	set_right_motor_speed(SPEED_LOW);
+
+	osDelay(1000);
+}
+
+void turnRight() {
+	leftMotorGPIO(FORWARD);
+	rightMotorGPIO(BACKWARD);
+
+	set_left_motor_speed(SPEED_LOW);
+	set_right_motor_speed(SPEED_LOW);
+
+	osDelay(1000);
+}
+
+void reverseTurn() {
+	leftMotorGPIO(FORWARD);
+	rightMotorGPIO(BACKWARD);
+
+	set_left_motor_speed(SPEED_LOW);
+	set_right_motor_speed(SPEED_LOW);
+	// Delay one second
+	osDelay(2000);
+}
+
+
+void FollowLine() {
+	leftMotorGPIO(FORWARD);
+	rightMotorGPIO(FORWARD);
 
 	// Get change in time since last loop call
 	float dt = HAL_GetTick() - previousTime;
@@ -190,6 +237,37 @@ void Drive() {
 	// Send motor speeds to PWM
 	set_left_motor_speed(motorSpeed[0]);
 	set_right_motor_speed(motorSpeed[1]);
+}
+
+
+void Drive() {
+	// Receive sensor data
+	//if (check(sensor_sub))
+	//{
+	//	copy(sensor_sub, &sensor_msg);
+	//}
+
+	// Check if on intersection
+	//if (on_intersection(sensor_msg)) {
+	//	drive_command_counter ++;
+
+//		switch (drive_commands[drive_command_counter])
+//		{
+//		case STRAIGHT:
+//			runExtraInch();
+//			break;
+//		case LEFT:
+//			turnLeft();
+//			break;
+//		case RIGHT:
+//			turnRight();
+//			break;
+//		}
+
+//	}
+
+//	FollowLine();
+	turnLeft();
 }
 
 
@@ -237,6 +315,7 @@ static void run() {
 
 		// Start driving
 		isDriving = true;
+		drive_command_counter = 0;
 	}
 
 	// Receive System Command info
@@ -267,7 +346,7 @@ static void run() {
 		}
 
 		if (isDriving) {
-			//Drive();
+			Drive();
 		} else {
 			stop_motors();
 		}
