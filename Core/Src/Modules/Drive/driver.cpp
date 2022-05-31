@@ -151,51 +151,64 @@ float linePosition(sensor_values_t x){
  * Calculates the position of the rover given a set of sensor values
  */
 bool on_intersection(sensor_values_t x){
-	float sum = x.s0 + x.s1 + x.s2 + x.s3 + x.s4 + x.s5 + x.s6 + x.s7;
-	float avg = sum/8;
+	int sum = x.s0 + x.s1 + x.s2 + x.s3 + x.s4 + x.s5 + x.s6 + x.s7;
+	int avg = sum/8;
+	ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", x.s0, x.s1, x.s2, x.s3, x.s4, x.s5, x.s6, x.s7);
 
 	if (avg < 500)
 	{
-		return 1;
+		return true;
 	}
 	else
 	{
-		return 0;
+		return false;
 	}
 }
 
 void runExtraInch() {
+	// Give the robot a little nudge
+	leftMotorGPIO(FORWARD);
+	rightMotorGPIO(FORWARD);
 
+	set_left_motor_speed(300);
+	set_right_motor_speed(300);
+
+	osDelay(500);
 }
 
 void turnLeft() {
+	// turns 90 degrees left at motor speed 300 for a delay of 500
 	leftMotorGPIO(BACKWARD);
 	rightMotorGPIO(FORWARD);
 
-	set_left_motor_speed(SPEED_LOW);
-	set_right_motor_speed(SPEED_LOW);
+	set_left_motor_speed(300);
+	set_right_motor_speed(300);
 
-	osDelay(1000);
+	osDelay(500);
 }
 
 void turnRight() {
+	// turns 90 degrees right at motor speed 300 for a delay of 500
 	leftMotorGPIO(FORWARD);
 	rightMotorGPIO(BACKWARD);
 
-	set_left_motor_speed(SPEED_LOW);
-	set_right_motor_speed(SPEED_LOW);
 
-	osDelay(1000);
+	set_left_motor_speed(300);
+	set_right_motor_speed(300);
+
+	osDelay(500);
 }
 
 void reverseTurn() {
+	// turns 180 degrees right at motor speed 300 for a delay of 1000
 	leftMotorGPIO(FORWARD);
 	rightMotorGPIO(BACKWARD);
 
-	set_left_motor_speed(SPEED_LOW);
-	set_right_motor_speed(SPEED_LOW);
+	set_left_motor_speed(300);
+	set_right_motor_speed(300);
+
 	// Delay one second
-	osDelay(2000);
+	osDelay(1000);
 }
 
 
@@ -231,7 +244,7 @@ void FollowLine() {
 	print_counter = print_counter + 1;
 	if (print_counter > 20) {
 		print_counter = 0;
-		ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+		//ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
 	}
 
 	// Send motor speeds to PWM
@@ -239,44 +252,46 @@ void FollowLine() {
 	set_right_motor_speed(motorSpeed[1]);
 }
 
-
-void Drive() {
-	// Receive sensor data
-	//if (check(sensor_sub))
-	//{
-	//	copy(sensor_sub, &sensor_msg);
-	//}
-
-	// Check if on intersection
-	//if (on_intersection(sensor_msg)) {
-	//	drive_command_counter ++;
-
-//		switch (drive_commands[drive_command_counter])
-//		{
-//		case STRAIGHT:
-//			runExtraInch();
-//			break;
-//		case LEFT:
-//			turnLeft();
-//			break;
-//		case RIGHT:
-//			turnRight();
-//			break;
-//		}
-
-//	}
-
-//	FollowLine();
-	turnLeft();
-}
-
-
 void stop_motors() {
 	leftMotorGPIO(STOP);
 	rightMotorGPIO(STOP);
 
 	set_left_motor_speed(0);
 	set_right_motor_speed(0);
+}
+
+void Drive() {
+	// Receive sensor data
+	if (check(sensor_sub))
+	{
+		copy(sensor_sub, &sensor_msg);
+	}
+
+	// Check if on intersection
+	if (on_intersection(sensor_msg)) {
+		drive_command_counter ++;
+
+		ROVER_PRINTLN("[Driver] PATH: %s", drive_commands[drive_command_counter]);
+		switch (drive_commands[drive_command_counter])
+		{
+		case STRAIGHT:
+			runExtraInch();
+			break;
+		case LEFT:
+			turnLeft();
+			break;
+		case RIGHT:
+			turnRight();
+			break;
+		case STOP_TRIP:
+			stop_motors();
+			break;
+		}
+
+	}
+
+	FollowLine();
+	//turnLeft();
 }
 
 
@@ -332,8 +347,6 @@ static void run() {
 	}
 
 
-
-
 	if (!armed) {
 		if (sys_msg.arm) {
 			armed = true;
@@ -347,6 +360,9 @@ static void run() {
 
 		if (isDriving) {
 			Drive();
+			// Use for debugging to find the delay time to turn
+			//osDelay(500);
+			//isDriving = false;
 		} else {
 			stop_motors();
 		}
