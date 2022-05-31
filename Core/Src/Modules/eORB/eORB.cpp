@@ -47,11 +47,11 @@ static int get_size_of_topic(int topic) {
         case TOPIC_SYS_COMMAND:
 			size = sizeof(system_command_t);
 			break;
-        case TOPIC_DRIVE_COMMAND:
-			size = sizeof(drive_command_t);
-			break;
         case TOPIC_SENSORS:
 			size = sizeof(sensor_values_t);
+			break;
+        case TOPIC_OBSTACLE:
+			size = sizeof(obstacle_t);
 			break;
     }
 

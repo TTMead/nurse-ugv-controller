@@ -4,10 +4,11 @@
  * @desc Controls the driving of the motor
  *
  * @author Evan Devoy
+ * @author Timothy Mead
  *
  ************************************/
 
-
+#include <navigation.hpp>
 #include "driver.hpp"
 #include "stm32f4xx_hal.h"
 #include "eORB.hpp"
@@ -60,13 +61,25 @@ float SPEED;
 #define STOP 2
 
 
-
 		/* **** Local variables **** */
 
 /* Generic */
-int sensor_sub; // Subscription to the sensor topic
-sensor_values_t sensor; // Memory location of received sensor values
+int sensor_sub;
+int waypoint_sub;
+int system_sub;
+
+sensor_values_t sensor_msg;
+waypoint_t waypoint_msg;
+system_command_t sys_msg;
+
+uint8_t previous_waypoint;
+uint8_t current_waypoint;
+
+drive_cmd drive_commands[MAX_TURN_COUNT];
+
+
 int print_counter;
+bool debug;
 
 /* Control variables */
 PID_t pidLine;
@@ -77,8 +90,8 @@ int motorSpeed[2] = {0,0}; // The speeds of the left (0) and right (1) motors
 
 /* State variables */
 bool isDriving; // Controls whether the drive train is on
-
-
+bool armed;
+bool ESTOP_TRIGGERED;
 
 		/* **** Motor Directional Functions **** */
 
@@ -135,116 +148,147 @@ float linePosition(sensor_values_t x){
 }
 
 
+void Drive() {
+	// Receive sensor data
+	if (check(sensor_sub))
+	{
+		copy(sensor_sub, &sensor_msg);
+	}
+
+
+	// Get change in time since last loop call
+	float dt = HAL_GetTick() - previousTime;
+
+	// Get current pos and derivative
+	float position = linePosition(sensor_msg);
+
+	// Setpoint value
+	float setPoint = 4500;
+
+	// Calculate desired yaw effort
+#ifdef ON_WHITE_TRACK
+	int yawEffort = (int) (-Kp*(position - setPoint) + (-Kd*((position - setPoint) - previousError)));
+#else
+	int yawEffort = (int) (Kp*(position - setPoint) + (Kd*((setPoint - position) - previousError)));
+#endif
+
+	// Update previous position and previous time
+	previousPosition = position;
+	previousTime = previousTime + dt;
+	previousError = (position - setPoint);
+
+	// Set motor efforts and clamp
+	motorSpeed[0] = (int) (SPEED*clamp((500.0 + yawEffort), 0.0, 1000.0));
+	motorSpeed[1] = (int) (SPEED*clamp((500.0 - yawEffort), 0.0, 1000.0));
+
+	print_counter = print_counter + 1;
+	if (print_counter > 20) {
+		print_counter = 0;
+		ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+	}
+
+	// Send motor speeds to PWM
+	set_left_motor_speed(motorSpeed[0]);
+	set_right_motor_speed(motorSpeed[1]);
+}
+
+
+void stop_motors() {
+	leftMotorGPIO(STOP);
+	rightMotorGPIO(STOP);
+
+	set_left_motor_speed(0);
+	set_right_motor_speed(0);
+}
+
+
+void trigger_emergency_stop() {
+	ESTOP_TRIGGERED = true;
+	isDriving = false;
+
+	stop_motors();
+}
+
+
+
 /*
  * Cyclic executive
  */
 static void run() {
-	if (!isDriving) {
+	// If in an ESTOP, dont run anything
+	if (ESTOP_TRIGGERED) {
+		// Ensure motors are not moving
+		set_left_motor_speed(0);
+		set_right_motor_speed(0);
 		osDelay(15);
 		return;
 	}
 
-	// Receive sensor data
-	if (check(sensor_sub))
+	// Receive waypoint data
+	if (check(waypoint_sub))
 	{
-		copy(sensor_sub, &sensor);
+		// Copy waypoint message
+		copy(waypoint_sub, &waypoint_msg);
+		previous_waypoint = current_waypoint;
+		current_waypoint = waypoint_msg.waypoint_num;
+
+		// Convert waypoint into drive directions
+		get_directions(previous_waypoint, current_waypoint, drive_commands);
+
+		// Start driving
+		isDriving = true;
 	}
 
-	#ifdef PID_V2
-		// https://www.robotshop.com/community/blog/show/pid-tutorials-for-line-following
+	// Receive System Command info
+	if (check(system_sub))
+	{
+		copy(system_sub, &sys_msg);
 
-		// Current position of the robot
-		float position = sensor;
+		// Immediately trigger if an estop
+		if (sys_msg.estop) {
+			trigger_emergency_stop();
+			return;
+		}
 
-		// This is our goal (Corresponds to perfect placement) - may be a different value
-		int setpoint = 2500;
+		ROVER_PRINTLN("[Driver] Arm %d, Disarm %d", sys_msg.arm, sys_msg.disarm);
+	}
 
-		// Calculate the error in position (Aim to make this zero - then the robot will follow the line smoothly)
-		// A value towards 0 indicates the robot is to far to the left, a value towards 5000 indicates the robot is to far to the right
-		int error = setpoint - position; // FOR BLACK ON WHITE: position - setpoint
 
-		// Use PID to calculate motorspeed
-		int motorSpeed = Kp * error + Kd * (error - lastError);
-		lastError = error;
 
-		// Any PWM motor value 0-255 should work
-		int leftMotorSpeed = LEFTBASESPEED - motorSpeed; // FOR BLACK ON WHITE: LEFTBASESPEED + motorSpeed
-		int rightMotorSpeed = RIGHTBASESPEED + motorSpeed; // FOR BLACK ON WHITE: RIGHTBASESPEED - motorSpeed
 
-		// Clamp the motor speed values to ensure they are operating within the correct range
-		if (leftMotorSpeed > LEFTMAXSPEED) leftMotorSpeed = LEFTMAXSPEED;
-		if (rightMotorSpeed > RIGHTMAXSPEED) rightMotorSpeed = RIGHTMAXSPEED;
-		if (leftMotorSpeed < 0) leftMotorSpeed = 0;
-		if (rightMotorSpeed < 0) rightMotorSpeed = 0;
+	if (!armed) {
+		if (sys_msg.arm) {
+			armed = true;
+		}
 
-	#endif
+		stop_motors();
+	} else {
+		if (sys_msg.disarm) {
+			armed = false;
+		}
 
-	#ifdef PID_V1
+		if (isDriving) {
+			//Drive();
+		} else {
+			stop_motors();
+		}
+	}
 
-		// Get change in time since last loop call
-		float dt = HAL_GetTick() - previousTime;
-
-		// Get current pos and derivative
-		float position = linePosition(sensor);
-		// float positionDot = (position - previousPosition);
-
-		// Setpoint value
-		float setPoint = 4500;
-
-		// Calculate desired yaw effort
-#ifdef ON_WHITE_TRACK
-		int yawEffort = (int) (-Kp*(position - setPoint) + (-Kd*((position - setPoint) - previousError)));
-#else
-		int yawEffort = (int) (Kp*(position - setPoint) + (Kd*((setPoint - position) - previousError)));
-#endif
-		//int yawEffort = (int) pid_calculate(&pidLine, setPoint, position, positionDot, dt/1000.0);
-
-		// Update previous position and previous time
-		previousPosition = position;
-		previousTime = previousTime + dt;
-		previousError = (position - setPoint);
-
-		// Set motor efforts and clamp
-		motorSpeed[0] = (int) (SPEED*clamp((500.0 + yawEffort), 0.0, 1000.0));
-		motorSpeed[1] = (int) (SPEED*clamp((500.0 - yawEffort), 0.0, 1000.0));
-
+	if (debug) {
 		print_counter = print_counter + 1;
 		if (print_counter > 20) {
 			print_counter = 0;
-			ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+			ROVER_PRINTLN("[Driver] Arm %s", armed ? "true" : "false");
+			ROVER_PRINTLN("[Driver] Driving %s", isDriving ?  "true" : "false");
 		}
+	}
 
-		// Send motor speeds to PWM
-		set_left_motor_speed(motorSpeed[0]);
-	    set_right_motor_speed(motorSpeed[1]);
-
-	#endif
-
-	#ifdef BANG_BANG
-		// Bang-Bang Straight Path
-		if (sensor.s4 < WHITETHRESHOLD)
-		{
-			// Turn Left
-			motorSpeed[0] = 40;
-			motorSpeed[1] = 60;
-		}
-		else if (sensor.s3 < WHITETHRESHOLD)
-		{
-			// Turn Right
-			motorSpeed[0] = 60;
-			motorSpeed[1] = 40;
-		}
-		else
-		{
-			// Go Straight
-			motorSpeed[0] = 50;
-			motorSpeed[1] = 50;
-		}
-	#endif
 
 	// Controls the frequency of the cyclic executive
 	osDelay(15);
 }
+
+
 
 
 /*
@@ -253,6 +297,8 @@ static void run() {
 void StartDriver(void *argument) {
 	// Sensor data subscription
 	sensor_sub = subscribe(TOPIC_SENSORS);
+	waypoint_sub = subscribe(TOPIC_WAYPOINT);
+	system_sub = subscribe(TOPIC_SYS_COMMAND);
 
 	SPEED = SPEED_LOW;
 
@@ -269,10 +315,15 @@ void StartDriver(void *argument) {
 
 	//int lastError = 0;
 	previousError = 0;
-
 	print_counter = 0;
+	debug = false;
+	armed = false;
 
 	isDriving = false;
+	ESTOP_TRIGGERED = false;
+
+	previous_waypoint = 0;
+	current_waypoint = 0;
 
 	for (;;)
 	{
@@ -295,15 +346,12 @@ int driver_main(int argc, const char *argv[]) {
 
 	if (!strcmp(argv[1], "stop")) {
 		isDriving = false;
-		set_left_motor_speed(0);
-		set_right_motor_speed(0);
-		osDelay(50);
-		set_left_motor_speed(0);
-		set_right_motor_speed(0);
-		osDelay(50);
-		set_left_motor_speed(0);
-		set_right_motor_speed(0);
 		return 0;
+	}
+
+	if (!strcmp(argv[1], "debug")) {
+		ROVER_PRINTLN("[Driver] Debug Toggled");
+		debug = !debug;
 	}
 
 	if (argc < 3) {

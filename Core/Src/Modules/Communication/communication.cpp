@@ -11,6 +11,10 @@
 #include "serial.h"
 #include "msg_heartbeat.h"
 #include "msg_arm.h"
+#include "msg_waypoint.h"
+#include "msg_peripheralstate.h"
+#include "msg_estop.h"
+#include "msg_obstacle.h"
 #include "stm32f4xx_hal.h"
 #include "communication.hpp"
 #include "taskmanager.hpp"
@@ -85,9 +89,9 @@ void handle_wifi_command() {
 	// If the message fails the unpacking
 	if (!unpack_message(&id, &payload_length, payload, (uint8_t*) cmd.c_str()) == 0) {
 		// Print warning
-		// ROVER_PRINTLN("[Communicator] A WiFi message failed checksum!");
+		ROVER_PRINTLN("[Communicator] A WiFi message failed checksum!");
 	} else {
-		// Handle the command
+			// Handle the command
 		if (id == MSG_ID_HEARTBEAT) {
 			if (debug_wifi) { ROVER_PRINTLN("[WiFi] Heartbeat from Component %d received!", payload[0]); };
 		}
@@ -95,9 +99,37 @@ void handle_wifi_command() {
 			// Send the arm system command
 			system_command_t command;
 			command.timestamp = HAL_GetTick();
-			command.arm = payload[0]; command.disarm = !payload[0]; command.estop = 0;
-			command.waypoint_reached = 0; command.serving_completed = 0;
+			unpack_arm_payload(payload, &command.arm, &command.disarm);
 			publish(TOPIC_SYS_COMMAND, &command);
+		}
+		if (id == MSG_ID_ESTOP) {
+			// Send the ESTOP system command
+			system_command_t command;
+			command.timestamp = HAL_GetTick();
+			command.estop = 1;
+			publish(TOPIC_SYS_COMMAND, &command);
+		}
+		if (id == MSG_ID_WAYPOINT) {
+			// Send the waypoint command
+			waypoint_t waypoint_msg;
+			waypoint_msg.timestamp = HAL_GetTick();
+			unpack_waypoint_payload(payload, &waypoint_msg.waypoint_num);
+			publish(TOPIC_WAYPOINT, &waypoint_msg);
+		}
+		if (id == MSG_ID_PERIPHERALSTATE) {
+			// Send the peripheral command
+			system_command_t command;
+			command.timestamp = HAL_GetTick();
+			bool temp;
+			unpack_peripheralstate_payload(payload, &temp, &temp, &command.peripheral_items_collected);
+			publish(TOPIC_SYS_COMMAND, &command);
+		}
+		if (id == MSG_ID_OBSTACLE) {
+			// Send the peripheral command
+			obstacle_t obstacle_msg;
+			obstacle_msg.timestamp = HAL_GetTick();
+			unpack_obstacle_payload(payload, &obstacle_msg.obstacle_detected);
+			publish(TOPIC_OBSTACLE, &obstacle_msg);
 		}
 	}
 

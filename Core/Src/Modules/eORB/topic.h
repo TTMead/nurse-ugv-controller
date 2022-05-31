@@ -9,8 +9,8 @@
 #define TOPIC_BLINK 1
 #define TOPIC_WAYPOINT 2
 #define TOPIC_SYS_COMMAND 3
-#define TOPIC_DRIVE_COMMAND 4
 #define TOPIC_SENSORS 5
+#define TOPIC_OBSTACLE 6
 
 struct heartbeat_t {
 	uint64_t timestamp;
@@ -34,34 +34,14 @@ struct system_command_t {
 	bool estop;
 	bool waypoint_reached;
 	bool serving_completed;
+	bool peripheral_items_collected;
 };
 
-
-/* Max number of turns between any two waypoints */
-#define MAX_TURN_COUNT 5
-
-/* The five waypoints of the map */
-enum waypoint {
-	A,
-	B,
-	C,
-	D,
-	E
-};
-
-/* A possible action the drive system can take */
-enum drive_cmd {
-	LEFT,
-	RIGHT,
-	STRAIGHT,
-	STOP
-};
-
-struct drive_command_t {
+struct obstacle_t {
 	uint64_t timestamp;
-	drive_cmd commands[MAX_TURN_COUNT];
-	waypoint end_waypoint;
+	bool obstacle_detected;
 };
+
 
 
 
