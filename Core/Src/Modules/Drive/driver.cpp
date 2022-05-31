@@ -250,7 +250,6 @@ static void run() {
 			return;
 		}
 
-		ROVER_PRINTLN("[Driver] Arm %d, Disarm %d", sys_msg.arm, sys_msg.disarm);
 	}
 
 
