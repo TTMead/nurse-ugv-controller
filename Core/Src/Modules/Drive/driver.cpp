@@ -43,6 +43,8 @@ float SPEED = SPEED_LOW;
 
 /* PWM Settings */
 #define MOTOR_MAX_PWM 1000
+#define TURN_PWM 250
+#define TURN_DELAY_RATIO (6.12/3)
 
 
 		/* **** Mappings **** */
@@ -77,6 +79,8 @@ uint8_t current_waypoint;
 
 drive_cmd drive_commands[MAX_TURN_COUNT];
 int drive_command_counter;
+int intersection_refractory_counter;
+int intersection_refractory_time = 300;
 
 int print_counter;
 bool debug;
@@ -151,12 +155,20 @@ float linePosition(sensor_values_t x){
  * Calculates the position of the rover given a set of sensor values
  */
 bool on_intersection(sensor_values_t x){
+	if (intersection_refractory_counter > 0) {
+		intersection_refractory_counter --;
+		return false;
+	}
+
 	int sum = x.s0 + x.s1 + x.s2 + x.s3 + x.s4 + x.s5 + x.s6 + x.s7;
 	int avg = sum/8;
-	ROVER_PRINTLN("[irreader] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", x.s0, x.s1, x.s2, x.s3, x.s4, x.s5, x.s6, x.s7);
+	// ROVER_PRINTLN("[Driver] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", x.s0, x.s1, x.s2, x.s3, x.s4, x.s5, x.s6, x.s7);
 
 	if (avg < 500)
 	{
+		ROVER_PRINTLN("[Driver] Intersection Reached");
+
+		intersection_refractory_counter = intersection_refractory_time;
 		return true;
 	}
 	else
@@ -181,10 +193,10 @@ void turnLeft() {
 	leftMotorGPIO(BACKWARD);
 	rightMotorGPIO(FORWARD);
 
-	set_left_motor_speed(300);
-	set_right_motor_speed(300);
+	set_left_motor_speed(TURN_PWM);
+	set_right_motor_speed(TURN_PWM);
 
-	osDelay(500);
+	osDelay((int) ((float)TURN_PWM * (float)TURN_DELAY_RATIO));
 }
 
 void turnRight() {
@@ -193,10 +205,10 @@ void turnRight() {
 	rightMotorGPIO(BACKWARD);
 
 
-	set_left_motor_speed(300);
-	set_right_motor_speed(300);
+	set_left_motor_speed(TURN_PWM);
+	set_right_motor_speed(TURN_PWM);
 
-	osDelay(500);
+	osDelay((int) ((float)TURN_PWM * (float)TURN_DELAY_RATIO));
 }
 
 void reverseTurn() {
@@ -204,11 +216,10 @@ void reverseTurn() {
 	leftMotorGPIO(FORWARD);
 	rightMotorGPIO(BACKWARD);
 
-	set_left_motor_speed(300);
-	set_right_motor_speed(300);
+	set_left_motor_speed(TURN_PWM);
+	set_right_motor_speed(TURN_PWM);
 
-	// Delay one second
-	osDelay(1000);
+	osDelay((int) ((float)TURN_PWM * (2.0*TURN_DELAY_RATIO)));
 }
 
 
@@ -269,13 +280,12 @@ void Drive() {
 
 	// Check if on intersection
 	if (on_intersection(sensor_msg)) {
-		drive_command_counter ++;
+		ROVER_PRINTLN("[Driver] Drive Command: %d", drive_commands[drive_command_counter]);
 
-		ROVER_PRINTLN("[Driver] PATH: %s", drive_commands[drive_command_counter]);
 		switch (drive_commands[drive_command_counter])
 		{
 		case STRAIGHT:
-			runExtraInch();
+			// Do nothing
 			break;
 		case LEFT:
 			turnLeft();
@@ -284,11 +294,18 @@ void Drive() {
 			turnRight();
 			break;
 		case STOP_TRIP:
+			// Stopping trip and ready to receive next waypoint
 			stop_motors();
+			isDriving = false;
 			break;
 		}
 
+		drive_command_counter ++;
 	}
+
+
+
+
 
 	FollowLine();
 	//turnLeft();
@@ -317,22 +334,6 @@ static void run() {
 		return;
 	}
 
-	// Receive waypoint data
-	if (check(waypoint_sub))
-	{
-		// Copy waypoint message
-		copy(waypoint_sub, &waypoint_msg);
-		previous_waypoint = current_waypoint;
-		current_waypoint = waypoint_msg.waypoint_num;
-
-		// Convert waypoint into drive directions
-		get_directions(previous_waypoint, current_waypoint, drive_commands);
-
-		// Start driving
-		isDriving = true;
-		drive_command_counter = 0;
-	}
-
 	// Receive System Command info
 	if (check(system_sub))
 	{
@@ -347,15 +348,19 @@ static void run() {
 	}
 
 
+
+
 	if (!armed) {
 		if (sys_msg.arm) {
 			armed = true;
+			ROVER_PRINTLN("[Driver] Armed");
 		}
 
 		stop_motors();
 	} else {
 		if (sys_msg.disarm) {
 			armed = false;
+			ROVER_PRINTLN("[Driver] Disarmed");
 		}
 
 		if (isDriving) {
@@ -364,16 +369,29 @@ static void run() {
 			//osDelay(500);
 			//isDriving = false;
 		} else {
+			// Continually ensure motors are stopped
 			stop_motors();
-		}
-	}
 
-	if (debug) {
-		print_counter = print_counter + 1;
-		if (print_counter > 20) {
-			print_counter = 0;
-			ROVER_PRINTLN("[Driver] Arm %s", armed ? "true" : "false");
-			ROVER_PRINTLN("[Driver] Driving %s", isDriving ?  "true" : "false");
+			// Check for new waypoint data
+			if (check(waypoint_sub))
+			{
+				// Copy waypoint message
+				copy(waypoint_sub, &waypoint_msg);
+				previous_waypoint = current_waypoint;
+				current_waypoint = waypoint_msg.waypoint_num - 1; // This module starts counting waypoints from 0 while the serial protocol starts from 1
+
+				// Convert waypoint into drive directions
+				get_directions(previous_waypoint, current_waypoint, drive_commands);
+
+				// Start driving
+				isDriving = true;
+				drive_command_counter = 0;
+
+				ROVER_PRINTLN("[Driver] Waypoint: %c", waypoint_id_to_char(current_waypoint));
+
+				// Turn before starting
+				reverseTurn();
+			}
 		}
 	}
 
@@ -418,6 +436,8 @@ void StartDriver(void *argument) {
 
 	previous_waypoint = 0;
 	current_waypoint = 0;
+
+	intersection_refractory_counter = 0;
 
 	for (;;)
 	{

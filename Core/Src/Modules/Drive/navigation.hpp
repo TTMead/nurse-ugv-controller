@@ -47,7 +47,41 @@ const drive_cmd transition_table[5][5][MAX_TURN_COUNT] = {
  * @param buffer - a buffer to store the drive command
  */
 int get_directions(int a, int b, drive_cmd *buffer) {
-	std::memcpy(buffer, transition_table[a][b], MAX_TURN_COUNT*sizeof(drive_cmd));
+	std::memcpy(buffer, transition_table[b][a], MAX_TURN_COUNT*sizeof(drive_cmd));
 
 	return 0;
+}
+
+
+char waypoint_id_to_char(int waypoint) {
+	switch (waypoint) {
+	case 0:
+		return 'A';
+	case 1:
+		return 'B';
+	case 2:
+		return 'C';
+	case 3:
+		return 'D';
+	case 4:
+		return 'E';
+	}
+
+	return '\\';
+}
+
+
+void drive_command_to_char(int command, char* buff) {
+	switch (command) {
+	case 0:
+		strcpy (buff, "LEFT");
+	case 1:
+		strcpy (buff, "RIGHT");
+	case 2:
+		strcpy (buff, "STRAIGHT");
+	case 3:
+		strcpy (buff, "STOP");
+	}
+
+	strcpy(buff, " ");
 }
