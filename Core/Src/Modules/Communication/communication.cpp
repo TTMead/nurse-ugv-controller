@@ -35,6 +35,10 @@ static uint8_t wifi_message_len;
 static uint8_t serial_message_buff[MAX_BUF_LEN];
 static uint8_t serial_message_len;
 
+/* Memory buffer for peripheral bytes in transit */
+static uint8_t nav_message_buff[MAX_BUF_LEN];
+static uint8_t nav_message_len;
+
 /* Memory buffer for storing wifi commands in transit */
 static uint8_t wifi_command_buff[MAX_BUF_LEN];
 static uint8_t wifi_command_counter;
@@ -42,6 +46,10 @@ static uint8_t wifi_command_counter;
 /* Memory buffer for storing serial commands in transit */
 static char serial_command_buff[MAX_BUF_LEN];
 static uint8_t serial_command_counter;
+
+/* Memory buffer for storing peripheral commands in transit */
+static char nav_command_buff[MAX_BUF_LEN];
+static uint8_t nav_command_counter;
 
 
 /* Get Number of Arguments
@@ -116,21 +124,6 @@ void handle_wifi_command() {
 			unpack_waypoint_payload(payload, &waypoint_msg.waypoint_num);
 			publish(TOPIC_WAYPOINT, &waypoint_msg);
 		}
-		if (id == MSG_ID_PERIPHERALSTATE) {
-			// Send the peripheral command
-			system_command_t command;
-			command.timestamp = HAL_GetTick();
-			bool temp;
-			unpack_peripheralstate_payload(payload, &temp, &temp, &command.peripheral_items_collected);
-			publish(TOPIC_SYS_COMMAND, &command);
-		}
-		if (id == MSG_ID_OBSTACLE) {
-			// Send the peripheral command
-			obstacle_t obstacle_msg;
-			obstacle_msg.timestamp = HAL_GetTick();
-			unpack_obstacle_payload(payload, &obstacle_msg.obstacle_detected);
-			publish(TOPIC_OBSTACLE, &obstacle_msg);
-		}
 	}
 
 
@@ -201,6 +194,81 @@ void handle_serial_command() {
 	serial_command_counter = 0;
 }
 
+// Debugging function
+uint8_t get_checksum(uint8_t *message_buf, uint8_t *checksum_msg) {
+	*checksum_msg = message_buf[message_buf[1]+2];
+
+	// End byte: Checksum
+	uint8_t checksum_calc;
+
+	// Return error if checksum is invalid
+	if (calculate_checksum(message_buf, message_buf[1]+1, &checksum_calc)) return 1;
+
+	// Return whether the checksum matches the re-calculated checksum
+	return checksum_calc;
+	//return 2*(checksum_calc != message_buf[message_buf[1]+2]);
+}
+
+
+void handle_nav_command() {
+
+	// Initialise command read buff
+	std::string cmd = "";
+
+	// Copy command into new buff
+	for (int i = 0; i < nav_command_counter; i++) {
+		// Skip newline characters
+		if (nav_command_buff[i] == 10) {
+			continue;
+		}
+
+		// Add this char into buff
+		cmd += nav_command_buff[i];
+	}
+
+	// Unpack the message
+	uint8_t id;
+	uint8_t payload_length;
+	uint8_t payload[6];
+
+	// If the message fails the unpacking
+	if (!unpack_message(&id, &payload_length, payload, (uint8_t*) cmd.c_str()) == 0) {
+		uint8_t checksum_msg;
+		uint8_t checksum_calc = get_checksum((uint8_t*) cmd.c_str(), &checksum_msg);
+		// Print warning
+		ROVER_PRINTLN("[Communicator] A peripheral message failed checksum! MSG: %d Calc: %d", checksum_msg, checksum_calc);
+
+	} else {
+		if (id == MSG_ID_PERIPHERALSTATE) {
+			// Send the peripheral command
+			system_command_t command;
+			command.timestamp = HAL_GetTick();
+			bool temp;
+			unpack_peripheralstate_payload(payload, &temp, &temp, &command.peripheral_items_collected);
+			publish(TOPIC_SYS_COMMAND, &command);
+
+			ROVER_PRINTLN("[Communicator] Peripheral State");
+		}
+		if (id == MSG_ID_OBSTACLE) {
+			// Send the peripheral command
+			obstacle_t obstacle_msg;
+			obstacle_msg.timestamp = HAL_GetTick();
+			unpack_obstacle_payload(payload, &obstacle_msg.obstacle_detected);
+			publish(TOPIC_OBSTACLE, &obstacle_msg);
+
+			ROVER_PRINTLN("[Communicator] Obstacle");
+		}
+	}
+
+
+	// Reset the nav command buff
+	nav_command_counter = 0;
+
+
+
+}
+
+
 
 
 static void run() {
@@ -244,6 +312,26 @@ static void run() {
 
 	}
 
+	// If atleast one byte of data was received from the peripheral module
+	if (Nav_read(&nav_message_len)) {
+
+		// For each byte of data received
+		for (int i = 0; i < nav_message_len; i++) {
+			// If the byte is an eol
+			if (nav_message_buff[i] == '\n') {
+				// The command is completed. Now handle the command
+				handle_nav_command();
+			}
+
+			// Transfer the byte of data to the command buffer
+			nav_command_buff[nav_command_counter] = (char) nav_message_buff[i];
+
+			// Increment the serial counter
+			nav_command_counter ++;
+		}
+
+	}
+
 	// Cyclical time step
 	osDelay(500);
 }
@@ -259,10 +347,12 @@ void StartCommunication(void *argument) {
 	// Initialise comms
 	init_wifi_comm(wifi_message_buff);
 	init_serial_comm(serial_message_buff);
+	init_nav_comm(nav_message_buff);
 
 	// Initialise the command counters
 	wifi_command_counter = 0;
 	serial_command_counter = 0;
+	nav_command_counter = 0;
 
 	for (;;)
 	{

@@ -297,6 +297,12 @@ void Drive() {
 			// Stopping trip and ready to receive next waypoint
 			stop_motors();
 			isDriving = false;
+
+			// Send the peripheral controller an update packet
+			//uint8_t message_buf[10];
+			//pack_peripheralstate_msg(message_buf, 0, 1, 0);
+			//NAV_send(message_buf, MSG_SIZE_PERIPHERAL_STATE);
+
 			break;
 		}
 
@@ -387,7 +393,14 @@ static void run() {
 				isDriving = true;
 				drive_command_counter = 0;
 
+				// Inform serial
 				ROVER_PRINTLN("[Driver] Waypoint: %c", waypoint_id_to_char(current_waypoint));
+
+				// Send the peripheral controller an update packet
+				//uint8_t message_buf[10];
+				//pack_peripheralstate_msg(message_buf, 1, 0, 0);
+				//NAV_send(message_buf, MSG_SIZE_PERIPHERAL_STATE);
+
 
 				// Turn before starting
 				reverseTurn();

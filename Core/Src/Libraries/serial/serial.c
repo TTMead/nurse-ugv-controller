@@ -219,7 +219,7 @@ uint8_t Nav_read(uint8_t *message_len) {
 	*message_len = nav_counter;
 
 	// Indicate that this buffer has been read.
-	serial_read = true;
+	nav_read = true;
 
 	return 1;
 }

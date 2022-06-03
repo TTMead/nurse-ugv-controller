@@ -67,7 +67,7 @@ uint8_t NAV_send(uint8_t *message_buf, uint8_t message_len);
  * @returns 1 if a message was found
  * 			0 if unsuccessful or no message found
  */
-uint8_t NAV_read(uint8_t *message_len);
+uint8_t Nav_read(uint8_t *message_len);
 
 
 /* Initialise Navigator Communication
