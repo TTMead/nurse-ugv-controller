@@ -18,6 +18,8 @@
 #include "string.h"
 
 
+#define MIN(x, y) (((x) > (y)) ? (x) : (y))
+
 
 		/* **** Settings **** */
 
@@ -33,13 +35,13 @@ float SPEED = 0.35;
 /* Control Settings */
 
 // OLD
-#define Kp 0.9 //Straight: 0.18
+#define Kp 0.7 //Straight: 0.18
 #define Ki 0
-#define Kd 5 //Straight: 2
+#define Kd 3.5 //Straight: 2
 
 // NEW
 //#define Kp 1.6
-//#define Ki 0
+//#define 0
 //#define Kd 7
 
 /* IR Settings */
@@ -55,7 +57,7 @@ float SPEED = 0.35;
 /* PWM Settings */
 #define MOTOR_MAX_PWM 1000
 #define TURN_PWM 225
-float TURN_DELAY_RATIO = 5.5;
+float TURN_DELAY_RATIO = 6.2;
 
 
 		/* **** Mappings **** */
@@ -93,9 +95,10 @@ uint8_t current_waypoint;
 drive_cmd drive_commands[MAX_TURN_COUNT];
 int drive_command_counter;
 int intersection_refractory_counter;
-int intersection_refractory_time = 300;
+int intersection_refractory_time = 150;
 
 int print_counter;
+int off_track_counter;
 bool debug;
 
 /* Control variables */
@@ -191,15 +194,33 @@ bool on_intersection(sensor_values_t x){
 	}
 }
 
-void runExtraInch() {
-	// Give the robot a little nudge
-	leftMotorGPIO(FORWARD);
-	rightMotorGPIO(FORWARD);
+/*
+ * Calculates the position of the rover given a set of sensor values
+ */
+bool off_track(sensor_values_t x){
 
-	set_left_motor_speed(300);
-	set_right_motor_speed(300);
+	int sum = x.s0 + x.s1 + x.s2 + x.s3 + x.s4 + x.s5 + x.s6 + x.s7;
+	int avg = sum/8;
 
-	osDelay(500);
+	// ROVER_PRINTLN("[Driver] S1: %d, S2: %d, S3 %d, S4: %d, S5: %d, S6 %d, S7 %d, S8 %d", x.s0, x.s1, x.s2, x.s3, x.s4, x.s5, x.s6, x.s7);
+
+
+
+	if (avg > 2000)
+	{
+		off_track_counter ++;
+
+		if (off_track_counter > 230) {
+			ROVER_PRINTLN("[Driver] Off Road E-STOP");
+			return true;
+		}
+	}
+	else
+	{
+		off_track_counter = 0;
+	}
+
+	return false;
 }
 
 void turnLeft() {
@@ -271,7 +292,7 @@ void FollowLine() {
 	print_counter = print_counter + 1;
 	if (print_counter > 20) {
 		print_counter = 0;
-		ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+		//ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
 	}
 
 	// Send motor speeds to PWM
@@ -287,11 +308,24 @@ void stop_motors() {
 	set_right_motor_speed(0);
 }
 
+
+void trigger_emergency_stop() {
+	ESTOP_TRIGGERED = true;
+	isDriving = false;
+
+	stop_motors();
+}
+
 void Drive() {
 	// Receive sensor data
 	if (check(sensor_sub))
 	{
 		copy(sensor_sub, &sensor_msg);
+	}
+
+	// Emergency Stop if off the track
+	if (off_track(sensor_msg)) {
+		trigger_emergency_stop();
 	}
 
 	// Check if on intersection
@@ -304,9 +338,11 @@ void Drive() {
 			// Do nothing
 			break;
 		case LEFT:
+			osDelay(100);
 			turnLeft();
 			break;
 		case RIGHT:
+			osDelay(100);
 			turnRight();
 			break;
 		case STOP_TRIP:
@@ -333,12 +369,6 @@ void Drive() {
 }
 
 
-void trigger_emergency_stop() {
-	ESTOP_TRIGGERED = true;
-	isDriving = false;
-
-	stop_motors();
-}
 
 
 
@@ -359,6 +389,8 @@ static void run() {
 	if (check(system_sub))
 	{
 		copy(system_sub, &sys_msg);
+
+		ROVER_PRINTLN("[Driver] MSG: %d, %d, %d, %d, %d, %d, %d", sys_msg.arm, sys_msg.disarm, sys_msg.estop, sys_msg.peripheral_items_collected, sys_msg.serving_completed, sys_msg.waypoint_reached);
 
 		// Immediately trigger if an estop
 		if (sys_msg.estop) {
@@ -469,6 +501,7 @@ static void run() {
 				// Start driving
 				isDriving = true;
 				drive_command_counter = 0;
+				intersection_refractory_counter = intersection_refractory_time;
 
 				// Inform serial
 				ROVER_PRINTLN("[Driver] Waypoint: %c", waypoint_id_to_char(current_waypoint));
@@ -520,6 +553,7 @@ void StartDriver(void *argument) {
 
 	previousError = 0;
 	print_counter = 0;
+	off_track_counter = 0;
 	debug = false;
 	armed = false;
 

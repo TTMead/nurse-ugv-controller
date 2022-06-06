@@ -108,6 +108,7 @@ void handle_wifi_command() {
 			system_command_t command;
 			command.timestamp = HAL_GetTick();
 			unpack_arm_payload(payload, &command.arm, &command.disarm);
+			command.estop = 0; command.peripheral_items_collected = 0; command.serving_completed = 0; command.waypoint_reached = 0;
 			publish(TOPIC_SYS_COMMAND, &command);
 		}
 		if (id == MSG_ID_ESTOP) {
@@ -115,6 +116,7 @@ void handle_wifi_command() {
 			system_command_t command;
 			command.timestamp = HAL_GetTick();
 			command.estop = 1;
+			command.arm = 0; command.disarm = 0; command.peripheral_items_collected = 0; command.serving_completed = 0; command.waypoint_reached = 0;
 			publish(TOPIC_SYS_COMMAND, &command);
 		}
 		if (id == MSG_ID_WAYPOINT) {
