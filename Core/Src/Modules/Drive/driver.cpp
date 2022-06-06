@@ -9,6 +9,7 @@
  ************************************/
 
 #include <navigation.hpp>
+#include "msg_peripheralstate.h"
 #include "driver.hpp"
 #include "stm32f4xx_hal.h"
 #include "eORB.hpp"
@@ -69,10 +70,12 @@ float SPEED = SPEED_LOW;
 int sensor_sub;
 int waypoint_sub;
 int system_sub;
+int obstacle_sub;
 
 sensor_values_t sensor_msg;
 waypoint_t waypoint_msg;
 system_command_t sys_msg;
+obstacle_t obstacle_msg;
 
 uint8_t previous_waypoint;
 uint8_t current_waypoint;
@@ -93,9 +96,10 @@ float previousError;
 int motorSpeed[2] = {0,0}; // The speeds of the left (0) and right (1) motors
 
 /* State variables */
-bool isDriving; // Controls whether the drive train is on
-bool armed;
-bool ESTOP_TRIGGERED;
+bool isDriving; // Do we have a waypoint to go to?
+bool armed; // Are we armed?
+bool ESTOP_TRIGGERED; // Is the ESTOP enabled?
+bool obstacleDetected; // Is an obstacle in front of the rover?
 
 		/* **** Motor Directional Functions **** */
 
@@ -299,9 +303,9 @@ void Drive() {
 			isDriving = false;
 
 			// Send the peripheral controller an update packet
-			//uint8_t message_buf[10];
-			//pack_peripheralstate_msg(message_buf, 0, 1, 0);
-			//NAV_send(message_buf, MSG_SIZE_PERIPHERAL_STATE);
+			uint8_t message_buf[10];
+			pack_peripheralstate_msg(message_buf, 0, 1, 0);
+			NAV_send(message_buf, MSG_SIZE_PERIPHERALSTATE);
 
 			break;
 		}
@@ -314,7 +318,6 @@ void Drive() {
 
 
 	FollowLine();
-	//turnLeft();
 }
 
 
@@ -351,6 +354,20 @@ static void run() {
 			return;
 		}
 
+		// If items collected, send rover back to waypoint.
+		if (sys_msg.peripheral_items_collected) {
+			waypoint_msg.timestamp = HAL_GetTick();
+			waypoint_msg.waypoint_num = 1;
+			publish(TOPIC_WAYPOINT, &waypoint_msg);
+		}
+
+	}
+
+	// Check for obstacle info
+	if (check(obstacle_sub)) {
+		copy(obstacle_sub, &obstacle_msg);
+
+		obstacleDetected = obstacle_msg.obstacle_detected;
 	}
 
 
@@ -370,12 +387,21 @@ static void run() {
 		}
 
 		if (isDriving) {
-			Drive();
-			// Use for debugging to find the delay time to turn
-			//osDelay(500);
-			//isDriving = false;
+
+			if (obstacleDetected) {
+				// Ensure motors are stopped
+				stop_motors();
+			} else {
+				// Use for debugging to find the delay time to turn
+				//osDelay(500);
+				//isDriving = false;
+
+				// Only drive if no obstacles, and there is a waypoint available
+				Drive();
+			}
+
 		} else {
-			// Continually ensure motors are stopped
+			// Ensure motors are stopped
 			stop_motors();
 
 			// Check for new waypoint data
@@ -397,9 +423,9 @@ static void run() {
 				ROVER_PRINTLN("[Driver] Waypoint: %c", waypoint_id_to_char(current_waypoint));
 
 				// Send the peripheral controller an update packet
-				//uint8_t message_buf[10];
-				//pack_peripheralstate_msg(message_buf, 1, 0, 0);
-				//NAV_send(message_buf, MSG_SIZE_PERIPHERAL_STATE);
+				uint8_t message_buf[10];
+				pack_peripheralstate_msg(message_buf, 1, 0, 0);
+				NAV_send(message_buf, MSG_SIZE_PERIPHERALSTATE);
 
 
 				// Turn before starting
@@ -424,10 +450,11 @@ void StartDriver(void *argument) {
 	sensor_sub = subscribe(TOPIC_SENSORS);
 	waypoint_sub = subscribe(TOPIC_WAYPOINT);
 	system_sub = subscribe(TOPIC_SYS_COMMAND);
+	obstacle_sub = subscribe(TOPIC_OBSTACLE);
 
 	SPEED = SPEED_LOW;
 
-	// Initialise hardwares
+	// Initialise hardware interfaces
 	leftMotorGPIO(FORWARD);
 	rightMotorGPIO(FORWARD);
 	initialise_motor_pwm();
@@ -438,7 +465,7 @@ void StartDriver(void *argument) {
 	previousPosition = 4.5;
 	previousTime = HAL_GetTick();
 
-	//int lastError = 0;
+
 	previousError = 0;
 	print_counter = 0;
 	debug = false;
@@ -446,6 +473,7 @@ void StartDriver(void *argument) {
 
 	isDriving = false;
 	ESTOP_TRIGGERED = false;
+	obstacleDetected = false;
 
 	previous_waypoint = 0;
 	current_waypoint = 0;
