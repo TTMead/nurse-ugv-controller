@@ -155,6 +155,14 @@ void rightMotorGPIO(int direction) {
 	
 }
 
+
+void readAllSensorData() {
+	while(check(sensor_sub)) {
+		copy(sensor_sub, &sensor_msg);
+	}
+}
+
+
 		/* **** END Motor Directional Functions **** */
 
 
@@ -223,40 +231,173 @@ bool off_track(sensor_values_t x){
 	return false;
 }
 
+
 void turnLeft() {
-	// turns 90 degrees left at motor speed 300 for a delay of 500
-	leftMotorGPIO(BACKWARD);
-	rightMotorGPIO(FORWARD);
+	ROVER_PRINTLN("[Driver] Turning Left");
+	int turning_state = 0;
 
-	set_left_motor_speed(TURN_PWM);
-	set_right_motor_speed(TURN_PWM);
+	while (true) {
+		ROVER_PRINTLN("[Driver] Turn State: %d", turning_state);
+		// Receive sensor data
+		readAllSensorData();
+		int avg_of_middle = (sensor_msg.s2 + sensor_msg.s3)/2;
 
-	osDelay((int) ((float)TURN_PWM * (float)TURN_DELAY_RATIO));
+		if (turning_state == 0) {
+
+			// Go until black
+//			if (avg_of_middle < 500) {
+//				leftMotorGPIO(BACKWARD);
+//				rightMotorGPIO(FORWARD);
+//
+//				set_left_motor_speed(TURN_PWM);
+//				set_right_motor_speed(TURN_PWM);
+//			} else {
+//				turning_state = 1;
+//			}
+			leftMotorGPIO(BACKWARD);
+			rightMotorGPIO(FORWARD);
+
+			set_left_motor_speed(TURN_PWM);
+			set_right_motor_speed(TURN_PWM);
+			osDelay(1000);
+			turning_state = 1;
+
+		}
+
+		if (turning_state == 1) {
+			// Go until white
+			if (avg_of_middle > 250) {
+				leftMotorGPIO(BACKWARD);
+				rightMotorGPIO(FORWARD);
+
+				set_left_motor_speed(TURN_PWM);
+				set_right_motor_speed(TURN_PWM);
+			} else {
+				turning_state = 2;
+				break;
+			}
+		}
+	}
+	ROVER_PRINTLN("[Driver] Turning Done");
+
+	osDelay((int) 500);
 }
 
 void turnRight() {
-	// turns 90 degrees right at motor speed 300 for a delay of 500
-	leftMotorGPIO(FORWARD);
-	rightMotorGPIO(BACKWARD);
+	ROVER_PRINTLN("[Driver] Turning Right");
+	int turning_state = 0;
 
+	while (true) {
+		ROVER_PRINTLN("[Driver] Turn State: %d", turning_state);
+		// Receive sensor data
+		readAllSensorData();
+		int avg_of_middle = (sensor_msg.s4 + sensor_msg.s5)/2;
 
-	set_left_motor_speed(TURN_PWM);
-	set_right_motor_speed(TURN_PWM);
+		if (turning_state == 0) {
 
-	osDelay((int) ((float)TURN_PWM * (float)TURN_DELAY_RATIO));
+			// Go until black
+//			if (avg_of_middle < 500) {
+//				leftMotorGPIO(FORWARD);
+//				rightMotorGPIO(BACKWARD);
+//
+//				set_left_motor_speed(TURN_PWM);
+//				set_right_motor_speed(TURN_PWM);
+//			} else {
+//				turning_state = 1;
+//			}
+			leftMotorGPIO(FORWARD);
+			rightMotorGPIO(BACKWARD);
+
+			set_left_motor_speed(TURN_PWM);
+			set_right_motor_speed(TURN_PWM);
+			osDelay(1000);
+			turning_state = 1;
+
+		}
+
+		if (turning_state == 1) {
+			// Go until white
+			if (avg_of_middle > 250) {
+				leftMotorGPIO(FORWARD);
+				rightMotorGPIO(BACKWARD);
+
+				set_left_motor_speed(TURN_PWM);
+				set_right_motor_speed(TURN_PWM);
+			} else {
+				turning_state = 2;
+				break;
+			}
+		}
+	}
+	ROVER_PRINTLN("[Driver] Turning Done");
+
+	osDelay((int) 500);
 }
 
 void reverseTurn() {
-	// turns 180 degrees right at motor speed 300 for a delay of 1000
-	leftMotorGPIO(FORWARD);
+	// Reverse a little bit
+	leftMotorGPIO(BACKWARD);
 	rightMotorGPIO(BACKWARD);
+	set_left_motor_speed(225);
+	set_right_motor_speed(260);
+	osDelay(1000);
 
-	ROVER_PRINTLN("REVERSE_TURN");
+	ROVER_PRINTLN("[Driver] Reverse Turning");
+	int turning_state = 0;
+	int timer = 0;
 
-	set_left_motor_speed(TURN_PWM);
-	set_right_motor_speed(TURN_PWM);
+	while (true) {
+		ROVER_PRINTLN("[Driver] Turn State: %d", turning_state);
+		// Receive sensor data
+		readAllSensorData();
+		int avg_of_middle = (sensor_msg.s3 + sensor_msg.s4)/2;
 
-	osDelay((int) ((float)TURN_PWM * (2.0*TURN_DELAY_RATIO)));
+		if (turning_state == 0) {
+
+			// Go until black
+//			if (avg_of_middle < 500) {
+//				leftMotorGPIO(FORWARD);
+//				rightMotorGPIO(BACKWARD);
+//
+//				set_left_motor_speed(TURN_PWM);
+//				set_right_motor_speed(TURN_PWM);
+//			} else {
+//				turning_state = 1;
+//			}
+
+			leftMotorGPIO(FORWARD);
+			rightMotorGPIO(BACKWARD);
+
+			set_left_motor_speed(TURN_PWM);
+			set_right_motor_speed(TURN_PWM);
+			osDelay(1700);
+			turning_state = 1;
+
+		}
+
+		if (turning_state == 1) {
+			// Go until white
+			if (avg_of_middle > 220) {
+				leftMotorGPIO(FORWARD);
+				rightMotorGPIO(BACKWARD);
+
+				set_left_motor_speed(TURN_PWM);
+				set_right_motor_speed(TURN_PWM);
+				timer = 0;
+			} else {
+				if (timer > 1) {
+					turning_state = 2;
+					break;
+				} else {
+					timer ++;
+				}
+
+			}
+		}
+	}
+	ROVER_PRINTLN("[Driver] Turning Done");
+
+	osDelay((int) 500);
 }
 
 
@@ -318,10 +459,7 @@ void trigger_emergency_stop() {
 
 void Drive() {
 	// Receive sensor data
-	if (check(sensor_sub))
-	{
-		copy(sensor_sub, &sensor_msg);
-	}
+	readAllSensorData();
 
 	// Emergency Stop if off the track
 	if (off_track(sensor_msg)) {
@@ -338,11 +476,11 @@ void Drive() {
 			// Do nothing
 			break;
 		case LEFT:
-			osDelay(100);
+			osDelay(150);
 			turnLeft();
 			break;
 		case RIGHT:
-			osDelay(100);
+			osDelay(150);
 			turnRight();
 			break;
 		case STOP_TRIP:
@@ -418,10 +556,7 @@ static void run() {
 #ifdef PID_TUNING_MODE
 
 	// Receive sensor data
-	if (check(sensor_sub))
-	{
-		copy(sensor_sub, &sensor_msg);
-	}
+	readAllSensorData();
 
 	if (!armed) {
 		stop_motors();
