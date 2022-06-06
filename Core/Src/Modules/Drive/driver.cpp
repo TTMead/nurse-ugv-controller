@@ -35,7 +35,7 @@ float SPEED = 0.35;
 /* Control Settings */
 
 // OLD
-#define Kp 0.7 //Straight: 0.18
+#define Kp 1.1 //Straight: 0.18
 #define Ki 0
 #define Kd 3.5 //Straight: 2
 
