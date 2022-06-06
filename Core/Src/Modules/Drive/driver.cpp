@@ -21,16 +21,26 @@
 
 		/* **** Settings **** */
 
+/* PID Tuning Mode */
+// #define PID_TUNING_MODE
+
 /* Speed Settings */
 #define SPEED_LOW 0.4
 #define SPEED_MED 0.6
 #define SPEED_HIGH 0.8
-float SPEED = SPEED_LOW;
+float SPEED = 0.35;
 
 /* Control Settings */
-#define Kp 0.7 //Straight: 0.18
+
+// OLD
+#define Kp 0.9 //Straight: 0.18
 #define Ki 0
-#define Kd 3.5 //Straight: 2
+#define Kd 5 //Straight: 2
+
+// NEW
+//#define Kp 1.6
+//#define Ki 0
+//#define Kd 7
 
 /* IR Settings */
 #define ON_WHITE_TRACK
@@ -44,8 +54,8 @@ float SPEED = SPEED_LOW;
 
 /* PWM Settings */
 #define MOTOR_MAX_PWM 1000
-#define TURN_PWM 250
-#define TURN_DELAY_RATIO (6.12/3)
+#define TURN_PWM 225
+float TURN_DELAY_RATIO = 5.5;
 
 
 		/* **** Mappings **** */
@@ -220,6 +230,8 @@ void reverseTurn() {
 	leftMotorGPIO(FORWARD);
 	rightMotorGPIO(BACKWARD);
 
+	ROVER_PRINTLN("REVERSE_TURN");
+
 	set_left_motor_speed(TURN_PWM);
 	set_right_motor_speed(TURN_PWM);
 
@@ -253,13 +265,13 @@ void FollowLine() {
 	previousError = (position - setPoint);
 
 	// Set motor efforts and clamp
-	motorSpeed[0] = (int) (SPEED*clamp((500.0 + yawEffort), 0.0, 1000.0));
-	motorSpeed[1] = (int) (SPEED*clamp((500.0 - yawEffort), 0.0, 1000.0));
+	motorSpeed[0] = (int) (SPEED*clamp((625.0 + yawEffort), 250, 1000.0));
+	motorSpeed[1] = (int) (SPEED*clamp((625.0 - yawEffort), 250, 1000.0));
 
 	print_counter = print_counter + 1;
 	if (print_counter > 20) {
 		print_counter = 0;
-		//ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
+		ROVER_PRINTLN("[Driver] Control Rate %d Hz, Position %d, Yaw Effort %d, Left Motor %d, Right Motor %d", (int)(1000.0/dt), (int)position, (int)yawEffort, (int)motorSpeed[0], (int)motorSpeed[1]);
 	}
 
 	// Send motor speeds to PWM
@@ -371,7 +383,31 @@ static void run() {
 	}
 
 
+#ifdef PID_TUNING_MODE
 
+	// Receive sensor data
+	if (check(sensor_sub))
+	{
+		copy(sensor_sub, &sensor_msg);
+	}
+
+	if (!armed) {
+		stop_motors();
+		if (sys_msg.arm) {
+			armed = true;
+			ROVER_PRINTLN("[Driver] Armed");
+		}
+
+	} else {
+		FollowLine();
+		if (sys_msg.disarm) {
+			armed = false;
+			ROVER_PRINTLN("[Driver] Disarmed");
+		}
+	}
+
+
+#else
 
 	if (!armed) {
 		if (sys_msg.arm) {
@@ -409,6 +445,21 @@ static void run() {
 			{
 				// Copy waypoint message
 				copy(waypoint_sub, &waypoint_msg);
+
+				// Check if this is a reset message
+				if (waypoint_msg.waypoint_num == 9) {
+					previous_waypoint = 0;
+					current_waypoint = 0;
+
+					isDriving = false;
+					ROVER_PRINTLN("[Driver] Reset to waypoint A");
+					stop_motors();
+
+					osDelay(15);
+					return;
+				}
+
+
 				previous_waypoint = current_waypoint;
 				current_waypoint = waypoint_msg.waypoint_num - 1; // This module starts counting waypoints from 0 while the serial protocol starts from 1
 
@@ -434,6 +485,7 @@ static void run() {
 		}
 	}
 
+#endif
 
 	// Controls the frequency of the cyclic executive
 	osDelay(15);
