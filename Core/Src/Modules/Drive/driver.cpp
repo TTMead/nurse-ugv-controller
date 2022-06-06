@@ -350,7 +350,7 @@ void reverseTurn() {
 		ROVER_PRINTLN("[Driver] Turn State: %d", turning_state);
 		// Receive sensor data
 		readAllSensorData();
-		int avg_of_middle = (sensor_msg.s3 + sensor_msg.s4)/2;
+		int avg_of_middle = (sensor_msg.s5 + sensor_msg.s6)/2;
 
 		if (turning_state == 0) {
 
@@ -370,20 +370,21 @@ void reverseTurn() {
 
 			set_left_motor_speed(TURN_PWM);
 			set_right_motor_speed(TURN_PWM);
-			osDelay(1700);
+			osDelay(1000);
 			turning_state = 1;
 
 		}
 
 		if (turning_state == 1) {
 			// Go until white
-			if (avg_of_middle > 220) {
+			if (avg_of_middle > 240) {
 				leftMotorGPIO(FORWARD);
 				rightMotorGPIO(BACKWARD);
 
 				set_left_motor_speed(TURN_PWM);
 				set_right_motor_speed(TURN_PWM);
 				timer = 0;
+				osDelay(10);
 			} else {
 				if (timer > 1) {
 					turning_state = 2;
